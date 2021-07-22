@@ -20,24 +20,25 @@ class State:
 
 class App:
     def __init__(self):
+        self.self.sc = 0.8
         self._running = True
         self._display_surf = None
-        self.size = self.width, self.height = 1400, 900
+        self.size = self.width, self.height = int(1400*self.sc), int(900*self.sc)
 
         self.map = None
-        self.map_pos = (3, 90)
-        self.map_size = self.mapw, self.maph = 1100, 807
+        self.map_pos = (3, int(90*self.sc))
+        self.map_size = self.mapw, self.maph = int(1100*self.sc), int(807*self.sc)
 
         self.clock = pygame.time.Clock()
         self.dt = 0
 
         self.toolbar_pos = (3, 3)
-        self.toolbar_size = self.toolbarw, self.toolbarh = 1393, 83
+        self.toolbar_size = self.toolbarw, self.toolbarh = int(1393*self.sc), int(83*self.sc)
 
         self.state = State.PRM
 
-        self.optionp_pos = (1106, 90)
-        self.optionp_size = self.optionp_w, self.optionp_h = 290, 807
+        self.optionp_pos = (int(1106*self.sc), int(90*self.sc))
+        self.optionp_size = self.optionp_w, self.optionp_h = int(290*self.sc), int(807*self.sc)
 
         self.planners = ['Probabilistic Roadmap', "RRT", "Potential Field"]
         self.default_planner = 'Probabilistic Roadmap'
