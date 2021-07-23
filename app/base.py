@@ -20,7 +20,7 @@ class State:
 
 class App:
     def __init__(self):
-        self.self.sc = 0.8
+        self.sc = 0.8
         self._running = True
         self._display_surf = None
         self.size = self.width, self.height = int(1400*self.sc), int(900*self.sc)
@@ -60,7 +60,7 @@ class App:
     def on_init(self):
         pygame.init()
         self._display_surf = pygame.display.set_mode(self.size, pygame.HWSURFACE | pygame.DOUBLEBUF)
-        self.manager = pygame_gui.UIManager(self.size)
+        self.manager = pygame_gui.UIManager(self.size, 'theme.json')
         self.map = pygame.Surface.subsurface(self._display_surf, (self.map_pos, self.map_size))
 
         self.toolbar_base = pygame_gui.core.UIContainer(
