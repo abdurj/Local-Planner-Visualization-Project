@@ -31,6 +31,9 @@ def sample_envir(map_pos, map_dim, obs_dim):
     
     return (x,y)
 
+def localize(map, pos):
+    return (pos[0]-map[0],pos[1]-map[1])
+
 #TODO: start, goal collision checking
 def generate_obs(num_obstacles, map_pos, map_dim, obs_dim):
     obs = []
@@ -76,8 +79,15 @@ class App:
 
         self.obstacles = []
         self.obs_dim = (50,50)
-        self._start_pos = None
+        self._rect_start_pos = None
         self.num_obstacles = 20
+
+        self.start_pose = self.sx, self.sy = (20,20)
+        self.start_radius = 10
+        self.goal_pose = self.gx, self.gy = (600,600)
+        self.goal_radius = 20
+
+        self.transition_pose = None
 
         # PRM OPTIONS
         self.prm_options = {
@@ -92,7 +102,9 @@ class App:
 
         #FLAGS
         self.flags = {
-            'set_obs': False
+            'set_obs': False,
+            'drag_start': False,
+            'drag_goal': False
         }
 
     def on_init(self):
@@ -182,27 +194,60 @@ class App:
     def on_event(self, event):
         if event.type == pygame.QUIT:
             self._running = False
-        if event.type == pygame.MOUSEBUTTONDOWN:
+        if event.type == pygame.MOUSEBUTTONDOWN:          
             if(self.flags['set_obs']):
-                self._start_pos = pygame.mouse.get_pos()
+                self._rect_start_pos = pygame.mouse.get_pos()
+                return
+            
+            pos = localize(self.map_pos, pygame.mouse.get_pos())
+            if( (pos[0]-self.sx)**2+(pos[1]-self.sy)**2 < self.start_radius**2):
+                self.flags['drag_start'] = True
+                self.transition_pose = self.start_pose
+
+            if( (pos[0]-self.gx)**2+(pos[1]-self.gy)**2 < self.goal_radius**2):
+                self.flags['drag_goal'] = True
+                self.transition_pose = self.goal_pose
 
         if event.type == pygame.MOUSEBUTTONUP:
-            if(self.flags['set_obs'] and self._start_pos):
-                curr_pos = pygame.mouse.get_pos()
-                w = curr_pos[0] - self._start_pos[0]
-                h = curr_pos[1] - self._start_pos[1]
-                rect = pygame.Rect(*self._start_pos, w,h)
+            if(self.flags['set_obs'] and self._rect_start_pos):
+                curr_pos = localize(self.map_pos, pygame.mouse.get_pos())
+                w = curr_pos[0] - self._rect_start_pos[0]
+                h = curr_pos[1] - self._rect_start_pos[1]
+                rect = pygame.Rect(*self._rect_start_pos, w,h)
                 rect.normalize()
                 self.obstacles.append(rect)
-                self._start_pos = None
+                self._rect_start_pos = None
+            elif(self.flags['drag_start']):
+                self.flags['drag_start'] = False
+                collision = False
+                for obs in self.obstacles:
+                    if obs.collidepoint(self.transition_pose):
+                        collision = True
+                        break
+                if not collision:
+                    self.start_pose = self.transition_pose
+                self.transition_pose = None
+
+            elif(self.flags['drag_goal']):
+                self.flags['drag_goal'] = False
+                collision = False
+                for obs in self.obstacles:
+                    if obs.collidepoint(self.transition_pose):
+                        collision = True
+                        break
+                if not collision:
+                    self.goal_pose = self.transition_pose
+                self.transition_pose = None
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 if(self.flags['set_obs']):
                     self.flags['set_obs'] = False
-                    self._start_pos = None
-
-
+                    self._rect_start_pos = None
+                if(self.flags['drag_start'] or self.flags['drag_goal']):
+                    self.transition_pose = None
+                    self.flags['drag_start'] = False
+                    self.flags['drag_goal'] = False
 
     def on_ui_event(self, event):
         if event.type == pygame.USEREVENT:
@@ -252,19 +297,31 @@ class App:
     def on_loop(self):
         self.dt = self.clock.tick(60) / 1000
         self.manager.update(self.dt)
+        if(self.flags['drag_start'] or self.flags['drag_goal']):
+            pos = pygame.mouse.get_pos()
+            self.transition_pose = (pos[0]-self.map_pos[0],pos[1]-self.map_pos[1])
+
+        self.sx,self.sy = self.start_pose
+        self.gx,self.gy = self.goal_pose
 
     def on_render(self):
         self._display_surf.fill(Color.GREY)
         self.map.fill(Color.WHITE)
 
+        pygame.draw.circle(self.map, Color.GREEN, self.start_pose, self.start_radius)
+        pygame.draw.circle(self.map, Color.GREEN, self.goal_pose, self.goal_radius)
+
+        if(self.transition_pose):
+            pygame.draw.circle(self.map, Color.RED, self.transition_pose, 15)
+
         for obj in self.obstacles:
             pygame.draw.rect(self.map, Color.BLUE, obj)
         
-        if(self._start_pos):
-            curr_pos = pygame.mouse.get_pos()
-            w = curr_pos[0] - self._start_pos[0]
-            h = curr_pos[1] - self._start_pos[1]
-            rect = pygame.Rect(*self._start_pos, w,h)
+        if(self._rect_start_pos):
+            curr_pos = localize(self.map_pos, pygame.mouse.get_pos())
+            w = curr_pos[0] - self._rect_start_pos[0]
+            h = curr_pos[1] - self._rect_start_pos[1]
+            rect = pygame.Rect(*self._rect_start_pos, w,h)
             rect.normalize()
             pygame.draw.rect(self.map, Color.BLUE, rect)
 
