@@ -1,6 +1,5 @@
-import pygame
+import pygame, random, pygame_gui
 from pygame.locals import *
-import pygame_gui
 from pygame_gui import elements
 
 
@@ -17,6 +16,38 @@ class State:
     RRT = 1
     PF = 2
 
+"""
+    map_pos -> Tuple(x,y)
+    map_dim -> Tuple(w,h)
+    obs_dim -> Tuple(maxw,maxh)
+"""
+def sample_envir(map_pos, map_dim, obs_dim):
+    sx = map_pos[0]
+    sy = map_pos[1]
+    ex = sx + map_dim[0] - obs_dim[0]
+    ey = sy + map_dim[1] - obs_dim[1]
+    x = int(random.uniform(sx, ex))
+    y = int(random.uniform(sy,ey))
+    
+    return (x,y)
+
+#TODO: start, goal collision checking
+def generate_obs(num_obstacles, map_pos, map_dim, obs_dim):
+    obs = []
+    for i in range(num_obstacles):
+        rect = None
+        collision = True
+        while collision:
+            pos = sample_envir(map_pos, map_dim, obs_dim)
+            size = (int(random.uniform(10,obs_dim[0])), int(random.uniform(10,obs_dim[1])))
+            rect = pygame.Rect(pos,size)
+            collision = False
+            for obj in obs:
+                if rect.colliderect(obj):
+                    collision = True
+                    break 
+        obs.append(rect)
+    return obs
 
 class App:
     def __init__(self):
@@ -44,6 +75,8 @@ class App:
         self.default_planner = 'Probabilistic Roadmap'
 
         self.obstacles = []
+        self.obs_dim = (50,50)
+        self._start_pos = None
         self.num_obstacles = 20
 
         # PRM OPTIONS
@@ -57,12 +90,16 @@ class App:
             'bias': 10
         }
 
+        #FLAGS
+        self.flags = {
+            'set_obs': False
+        }
+
     def on_init(self):
         pygame.init()
         self._display_surf = pygame.display.set_mode(self.size, pygame.HWSURFACE | pygame.DOUBLEBUF)
         self.manager = pygame_gui.UIManager(self.size, 'theme.json')
         self.map = pygame.Surface.subsurface(self._display_surf, (self.map_pos, self.map_size))
-
         self.toolbar_base = pygame_gui.core.UIContainer(
             pygame.Rect(self.toolbar_pos, (self.toolbarw, self.toolbarh + 200)), manager=self.manager,
             starting_height=0)
@@ -140,12 +177,32 @@ class App:
         }
 
         self.change_state(self.default_planner)
-
         self._running = True
 
     def on_event(self, event):
         if event.type == pygame.QUIT:
             self._running = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if(self.flags['set_obs']):
+                self._start_pos = pygame.mouse.get_pos()
+
+        if event.type == pygame.MOUSEBUTTONUP:
+            if(self.flags['set_obs'] and self._start_pos):
+                curr_pos = pygame.mouse.get_pos()
+                w = curr_pos[0] - self._start_pos[0]
+                h = curr_pos[1] - self._start_pos[1]
+                rect = pygame.Rect(*self._start_pos, w,h)
+                rect.normalize()
+                self.obstacles.append(rect)
+                self._start_pos = None
+
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                if(self.flags['set_obs']):
+                    self.flags['set_obs'] = False
+                    self._start_pos = None
+
+
 
     def on_ui_event(self, event):
         if event.type == pygame.USEREVENT:
@@ -183,6 +240,14 @@ class App:
                         f'Connect to {self.prm_options["neighbours"]} neighbours', pygame.Rect(11, 200, 268, 40),
                         manager=self.manager,
                         container=self.option_ui_windows[State.PRM])
+            if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
+                if event.ui_element == self.toolbar_buttons['add_obs']:
+                    self.flags['set_obs'] = True
+                if event.ui_element == self.toolbar_buttons['generate_obs']:
+                    self.obstacles = generate_obs(self.num_obstacles, self.map_pos, self.map_size, self.obs_dim)
+                if event.ui_element == self.toolbar_buttons['reset_obs']:
+                    self.obstacles = []
+
 
     def on_loop(self):
         self.dt = self.clock.tick(60) / 1000
@@ -191,6 +256,17 @@ class App:
     def on_render(self):
         self._display_surf.fill(Color.GREY)
         self.map.fill(Color.WHITE)
+
+        for obj in self.obstacles:
+            pygame.draw.rect(self.map, Color.BLUE, obj)
+        
+        if(self._start_pos):
+            curr_pos = pygame.mouse.get_pos()
+            w = curr_pos[0] - self._start_pos[0]
+            h = curr_pos[1] - self._start_pos[1]
+            rect = pygame.Rect(*self._start_pos, w,h)
+            rect.normalize()
+            pygame.draw.rect(self.map, Color.BLUE, rect)
 
         self.manager.draw_ui(self._display_surf)
 
