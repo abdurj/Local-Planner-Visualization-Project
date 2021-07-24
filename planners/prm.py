@@ -68,12 +68,14 @@ class Node:
 
     def draw(self, surf, node_radius, width):
         pygame.draw.circle(surf, Color.RED, self.get_coords(), node_radius, width=0)
-        for edge in self.edge:
+        for neighbour in self.edge:
             color = Color.GREY
-            if edge.search == "Dijkstra":
+            if neighbour.search == "Dijkstra":
                 color = Color.BLUE
+            if neighbour.search == "AStar":
+                color = Color.RED
 
-            pygame.draw.line(surf, color, self.edge[edge].nfrom.get_coords(), self.edge[edge].nto.get_coords(), width=width)
+            pygame.draw.line(surf, color, self.edge[neighbour].nfrom.get_coords(), self.edge[neighbour].nto.get_coords(), width=width)
 
     def __str__(self):
         return f"{self.x}, {self.y}, {self.id}"
@@ -217,7 +219,8 @@ class ProbabilisticRoadmap:
     def get_end_node(self):
         return self.find_node_in_radius(self.goal_pose, self.goal_radius)
 
-    def create_network(self, surf, nr):
+    def create_network(self, surf, nr, neighbours):
+        self.k = neighbours
         for node in self.nodes:
             node.adj = {}
             node.edge = {}
@@ -233,6 +236,9 @@ class ProbabilisticRoadmap:
             self.update_edges_lt(node)
 
     def update_k(self, k):
+        for node in self.nodes:
+            node.search = None
+            node.parent = None
         if k > self.k:
             self.k = k
             self.update_network_gt()

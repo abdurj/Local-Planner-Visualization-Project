@@ -1,11 +1,13 @@
 import threading
+import time
 
 import pygame, random, pygame_gui
 from pygame.locals import *
 from planners.prm import ProbabilisticRoadmap
-from search.search import Dijkstra
+from search.search import Dijkstra, AStar
 
 lock = threading.Lock()
+
 
 class Color:
     WHITE = (255, 255, 255)
@@ -64,6 +66,7 @@ def generate_obs(num_obstacles, map_pos, map_dim, obs_dim):
 
 class App:
     def __init__(self):
+        self.show_sim = True
         self.sc = 1
         self._running = True
         self._display_surf = None
@@ -86,6 +89,11 @@ class App:
 
         self.planners = ['Probabilistic Roadmap', "RRT", "Potential Field"]
         self.default_planner = 'Probabilistic Roadmap'
+
+
+        self.searches = ['Dijkstra',  'A*']
+        self.default_search = 'A*'
+        self.search = None
 
         self.obstacles = []
         self.obs_dim = (50, 50)
@@ -119,6 +127,23 @@ class App:
             'drag_start': False,
             'drag_goal': False
         }
+
+        # ON INIT
+        self.manager = None
+        self.toolbar_base =  None
+        self.toolbar_ui =  None
+        self.toolbar_buttons = None
+        self.option_ui_panel = None
+        self.option_ui_windows = None
+        self.option_title = None
+        self.obstacle_textbox = None
+        self.obstacle_slider = None
+        self.visualize_button = None
+        self.rrt_ui_options = None
+        self.prm_ui_options = None
+        self.planner = None
+        self.search = None
+        self.t = None
 
     def on_init(self):
         pygame.init()
@@ -195,23 +220,29 @@ class App:
             'neighbour_slider_textbox': pygame_gui.elements.UITextBox(
                 f'Connect to {self.prm_options["neighbours"]} neighbours', pygame.Rect(11, 200, 268, 40),
                 manager=self.manager, container=self.option_ui_windows[State.PRM]),
-            'neighbour_slider': pygame_gui.elements.UIHorizontalSlider(pygame.Rect(10, 240, 270, 40),
+            'neighbour_slider': pygame_gui.elements.UIHorizontalSlider(pygame.Rect(11, 240, 270, 40),
                                                                        self.prm_options['neighbours'], (1, 10),
                                                                        manager=self.manager,
                                                                        container=self.option_ui_windows[State.PRM]),
-            'set_k': pygame_gui.elements.UIButton(pygame.Rect(10,280,270,40), 'Set Neighbours', manager=self.manager, container=self.option_ui_windows[State.PRM])
+            'set_k': pygame_gui.elements.UIButton(pygame.Rect(11, 280, 270, 40), 'Set Neighbours', manager=self.manager,
+                                                  container=self.option_ui_windows[State.PRM]),
+            'search_textbox': pygame_gui.elements.UITextBox('Search', pygame.Rect(11, 320, 270, 40), manager=self.manager,
+                                                            container=self.option_ui_windows[State.PRM]),
+            'search_options': pygame_gui.elements.UIDropDownMenu(self.searches, self.default_search, pygame.Rect(11, 360, 270,40),  manager=self.manager,
+                                                                 container=self.option_ui_windows[State.PRM])
         }
 
         self.change_state(self.default_planner)
         self._running = True
 
-        self.planner = ProbabilisticRoadmap(self.map_size, self.start_pose, self.start_radius, self.goal_pose, self.goal_radius, self.obstacles,
+        self.planner = ProbabilisticRoadmap(self.map_size, self.start_pose, self.start_radius, self.goal_pose,
+                                            self.goal_radius, self.obstacles,
                                             self.prm_options['neighbours'])
+        self.search = AStar(self.planner.nodes)
 
-        self.t = threading.Thread(target=self.planner.sample, args=(self.prm_options['sample_size'], ))
+        self.t = threading.Thread(target=self.planner.sample, args=(self.prm_options['sample_size'],))
         self.t.start()
 
-        self.search = Dijkstra(self.planner.nodes)
 
     def on_event(self, event):
         if event.type == pygame.QUIT:
@@ -237,9 +268,8 @@ class App:
                 h = curr_pos[1] - self._rect_start_pos[1]
                 rect = pygame.Rect(*self._rect_start_pos, w, h)
                 rect.normalize()
-                self.obstacles.append(rect)
                 self._rect_start_pos = None
-                self.update_obstacles()
+                self.add_obstacle(rect)
 
             elif (self.flags['drag_start']):
                 self.flags['drag_start'] = False
@@ -250,7 +280,7 @@ class App:
                         break
                 if not collision:
                     self.start_pose = self.transition_pose
-                    self.planner.update_pose(self.start_pose, self.goal_pose)
+                    self.update_pose()
                 self.transition_pose = None
             elif (self.flags['drag_goal']):
                 self.flags['drag_goal'] = False
@@ -261,7 +291,7 @@ class App:
                         break
                 if not collision:
                     self.goal_pose = self.transition_pose
-                    self.planner.update_pose(self.start_pose, self.goal_pose)
+                    self.update_pose()
                 self.transition_pose = None
 
         if event.type == pygame.KEYDOWN:
@@ -279,6 +309,8 @@ class App:
             if event.user_type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
                 if event.ui_element == self.toolbar_buttons['planner_select']:
                     self.change_state(event.text)
+                if event.ui_element == self.prm_ui_options['search_options']:
+                    self.change_search(event.text)
             if event.user_type == pygame_gui.UI_HORIZONTAL_SLIDER_MOVED:
                 if event.ui_element == self.obstacle_slider:
                     self.num_obstacles = event.value
@@ -316,17 +348,14 @@ class App:
                 if event.ui_element == self.toolbar_buttons['add_obs']:
                     self.flags['set_obs'] = True
                 if event.ui_element == self.toolbar_buttons['generate_obs']:
-                    self.obstacles = generate_obs(self.num_obstacles, self.map_pos, self.map_size, self.obs_dim)
-                    self.update_obstacles()
+                    self.generate_obstacles()
                 if event.ui_element == self.toolbar_buttons['reset_obs']:
-                    self.obstacles = []
+                    self.resetObstacles()
                 if event.ui_element == self.visualize_button:
-                    self.planner.create_network(self.map, self.node_radius)
-                    self.t = threading.Thread(target=self.search.solve, args=(self.planner.nodes, self.planner.get_start_node(), self.planner.get_end_node(),))
-                    self.t.start()
+                    self.simulateState()
                 if event.ui_element == self.prm_ui_options['set_k']:
-                    print(self.prm_options['neighbours'])
                     self.planner.update_k(self.prm_options['neighbours'])
+                    self.search.path = []
 
     def on_loop(self):
         self.dt = self.clock.tick(60) / 1000
@@ -345,11 +374,8 @@ class App:
         pygame.draw.circle(self.map, Color.GREEN, self.start_pose, self.start_radius)
         pygame.draw.circle(self.map, Color.GREEN, self.goal_pose, self.goal_radius)
 
-        if (self.transition_pose):
+        if self.transition_pose:
             pygame.draw.circle(self.map, Color.RED, self.transition_pose, 15)
-
-        for obj in self.obstacles:
-            pygame.draw.rect(self.map, Color.BLUE, obj)
 
         if self._rect_start_pos:
             curr_pos = localize(self.map_pos, pygame.mouse.get_pos())
@@ -359,12 +385,7 @@ class App:
             rect.normalize()
             pygame.draw.rect(self.map, Color.BLUE, rect)
 
-        for node in self.planner.nodes:
-            node.draw(self.map, self.node_radius, 1)
-
-        for node in self.search.path:
-            pygame.draw.circle(self.map, Color.GREEN, node.get_coords(), self.node_radius+2, width=0)
-
+        self.renderState()
         self.manager.draw_ui(self._display_surf)
 
         pygame.display.update()
@@ -405,15 +426,63 @@ class App:
         else:
             self.toolbar_buttons['add_obs'].enable()
 
+    def change_search(self, search):
+        if search == 'Dijkstra' and self.search is not Dijkstra:
+            self.search = Dijkstra(self.planner.nodes)
+        elif search == 'A*' and self.search is not AStar:
+            self.search = AStar(self.planner.nodes)
+
     def update_prm_samples(self):
+        self.planner.set_obstacles(self.obstacles)
+        self.search.path = []
+        self.t = threading.Thread(target=self.planner.sample, args=(self.prm_options['sample_size'],))
+        self.t.start()
+
+    def generate_obstacles(self):
+        self.obstacles = generate_obs(self.num_obstacles, self.map_pos, self.map_size, self.obs_dim)
+        self.planner.set_obstacles(self.obstacles)
+        self.search.path = []
+        self.t = threading.Thread(target=self.planner.sample, args=(self.prm_options['sample_size'],))
+        self.t.start()
+
+    def add_obstacle(self, rect):
+        self.obstacles.append(rect)
         self.planner.set_obstacles(self.obstacles)
         self.t = threading.Thread(target=self.planner.sample, args=(self.prm_options['sample_size'],))
         self.t.start()
 
-    def update_obstacles(self):
-        self.planner.set_obstacles(self.obstacles)
-        self.t = threading.Thread(target=self.planner.sample, args=(self.prm_options['sample_size'],))
-        self.t.start()
+    def renderState(self):
+        if self.state == State.PRM:
+            for obj in self.obstacles:
+                pygame.draw.rect(self.map, Color.BLUE, obj)
+
+            for node in self.planner.nodes:
+                node.draw(self.map, self.node_radius, 1)
+
+            for node in self.search.path:
+                pygame.draw.circle(self.map, Color.GREEN, node.get_coords(), self.node_radius + 2, width=0)
+
+    def simulateState(self):
+        if self.state == State.PRM:
+            self.planner.create_network(self.map, self.node_radius, self.prm_options['neighbours'])
+            if self.t is None or not self.t.is_alive():
+                self.t = threading.Thread(target=self.search.solve, args=(
+                    self.planner.nodes, self.planner.get_start_node(), self.planner.get_end_node(),))
+                self.t.start()
+
+    def update_pose(self):
+        if self.state == State.PRM:
+            self.planner.update_pose(self.start_pose, self.goal_pose)
+            self.t = threading.Thread(target=self.search.update_solution,
+                                      args=(self.planner.get_start_node(), self.planner.get_end_node(),))
+            self.t.start()
+            self.t.join()
+
+    def resetObstacles(self):
+        if self.state == State.PRM:
+            self.planner.obstacles = []
+            self.obstacles = []
+            self.search.path = []
 
 
 if __name__ == "__main__":
