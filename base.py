@@ -1,7 +1,11 @@
+import threading
+
 import pygame, random, pygame_gui
 from pygame.locals import *
-from pygame_gui import elements
+from planners.prm import ProbabilisticRoadmap
+from search.search import Dijkstra
 
+lock = threading.Lock()
 
 class Color:
     WHITE = (255, 255, 255)
@@ -16,25 +20,30 @@ class State:
     RRT = 1
     PF = 2
 
+
 """
     map_pos -> Tuple(x,y)
     map_dim -> Tuple(w,h)
     obs_dim -> Tuple(maxw,maxh)
 """
+
+
 def sample_envir(map_pos, map_dim, obs_dim):
     sx = map_pos[0]
     sy = map_pos[1]
     ex = sx + map_dim[0] - obs_dim[0]
     ey = sy + map_dim[1] - obs_dim[1]
     x = int(random.uniform(sx, ex))
-    y = int(random.uniform(sy,ey))
-    
-    return (x,y)
+    y = int(random.uniform(sy, ey))
+
+    return (x, y)
+
 
 def localize(map, pos):
-    return (pos[0]-map[0],pos[1]-map[1])
+    return (pos[0] - map[0], pos[1] - map[1])
 
-#TODO: start, goal collision checking
+
+# TODO: start, goal collision checking
 def generate_obs(num_obstacles, map_pos, map_dim, obs_dim):
     obs = []
     for i in range(num_obstacles):
@@ -42,52 +51,56 @@ def generate_obs(num_obstacles, map_pos, map_dim, obs_dim):
         collision = True
         while collision:
             pos = sample_envir(map_pos, map_dim, obs_dim)
-            size = (int(random.uniform(10,obs_dim[0])), int(random.uniform(10,obs_dim[1])))
-            rect = pygame.Rect(pos,size)
+            size = (int(random.uniform(10, obs_dim[0])), int(random.uniform(10, obs_dim[1])))
+            rect = pygame.Rect(pos, size)
             collision = False
             for obj in obs:
                 if rect.colliderect(obj):
                     collision = True
-                    break 
+                    break
         obs.append(rect)
     return obs
 
+
 class App:
     def __init__(self):
-        self.sc = 0.9
+        self.sc = 1
         self._running = True
         self._display_surf = None
-        self.size = self.width, self.height = int(1400*self.sc), int(900*self.sc)
+        self.size = self.width, self.height = int(1400 * self.sc), int(900 * self.sc)
 
         self.map = None
-        self.map_pos = (3, int(90*self.sc))
-        self.map_size = self.mapw, self.maph = int(1100*self.sc), int(807*self.sc)
+        self.map_pos = (3, int(90 * self.sc))
+        self.map_size = self.mapw, self.maph = int(1100 * self.sc), int(807 * self.sc)
 
         self.clock = pygame.time.Clock()
         self.dt = 0
 
         self.toolbar_pos = (3, 3)
-        self.toolbar_size = self.toolbarw, self.toolbarh = int(1393*self.sc), int(83*self.sc)
+        self.toolbar_size = self.toolbarw, self.toolbarh = int(1393 * self.sc), int(83 * self.sc)
 
         self.state = State.PRM
 
-        self.optionp_pos = (int(1106*self.sc), int(90*self.sc))
-        self.optionp_size = self.optionp_w, self.optionp_h = int(290*self.sc), int(807*self.sc)
+        self.optionp_pos = (int(1106 * self.sc), int(90 * self.sc))
+        self.optionp_size = self.optionp_w, self.optionp_h = int(290 * self.sc), int(807 * self.sc)
 
         self.planners = ['Probabilistic Roadmap', "RRT", "Potential Field"]
         self.default_planner = 'Probabilistic Roadmap'
 
         self.obstacles = []
-        self.obs_dim = (50,50)
+        self.obs_dim = (50, 50)
         self._rect_start_pos = None
         self.num_obstacles = 20
 
-        self.start_pose = self.sx, self.sy = (20,20)
+        self.start_pose = self.sx, self.sy = (20, 20)
         self.start_radius = 10
-        self.goal_pose = self.gx, self.gy = (600,600)
+        self.goal_pose = self.gx, self.gy = (600, 600)
         self.goal_radius = 20
+        self.node_radius = 5
 
         self.transition_pose = None
+
+        self.path = []
 
         # PRM OPTIONS
         self.prm_options = {
@@ -100,7 +113,7 @@ class App:
             'bias': 10
         }
 
-        #FLAGS
+        # FLAGS
         self.flags = {
             'set_obs': False,
             'drag_start': False,
@@ -185,39 +198,50 @@ class App:
             'neighbour_slider': pygame_gui.elements.UIHorizontalSlider(pygame.Rect(10, 240, 270, 40),
                                                                        self.prm_options['neighbours'], (1, 10),
                                                                        manager=self.manager,
-                                                                       container=self.option_ui_windows[State.PRM])
+                                                                       container=self.option_ui_windows[State.PRM]),
+            'set_k': pygame_gui.elements.UIButton(pygame.Rect(10,280,270,40), 'Set Neighbours', manager=self.manager, container=self.option_ui_windows[State.PRM])
         }
 
         self.change_state(self.default_planner)
         self._running = True
 
+        self.planner = ProbabilisticRoadmap(self.map_size, self.start_pose, self.start_radius, self.goal_pose, self.goal_radius, self.obstacles,
+                                            self.prm_options['neighbours'])
+
+        self.t = threading.Thread(target=self.planner.sample, args=(self.prm_options['sample_size'], ))
+        self.t.start()
+
+        self.search = Dijkstra(self.planner.nodes)
+
     def on_event(self, event):
         if event.type == pygame.QUIT:
             self._running = False
-        if event.type == pygame.MOUSEBUTTONDOWN:          
-            if(self.flags['set_obs']):
-                self._rect_start_pos = pygame.mouse.get_pos()
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if (self.flags['set_obs']):
+                self._rect_start_pos = localize(self.map_pos, pygame.mouse.get_pos())
                 return
-            
+
             pos = localize(self.map_pos, pygame.mouse.get_pos())
-            if( (pos[0]-self.sx)**2+(pos[1]-self.sy)**2 < self.start_radius**2):
+            if ((pos[0] - self.sx) ** 2 + (pos[1] - self.sy) ** 2 < self.start_radius ** 2):
                 self.flags['drag_start'] = True
                 self.transition_pose = self.start_pose
 
-            if( (pos[0]-self.gx)**2+(pos[1]-self.gy)**2 < self.goal_radius**2):
+            if ((pos[0] - self.gx) ** 2 + (pos[1] - self.gy) ** 2 < self.goal_radius ** 2):
                 self.flags['drag_goal'] = True
                 self.transition_pose = self.goal_pose
 
         if event.type == pygame.MOUSEBUTTONUP:
-            if(self.flags['set_obs'] and self._rect_start_pos):
+            if (self.flags['set_obs'] and self._rect_start_pos):
                 curr_pos = localize(self.map_pos, pygame.mouse.get_pos())
                 w = curr_pos[0] - self._rect_start_pos[0]
                 h = curr_pos[1] - self._rect_start_pos[1]
-                rect = pygame.Rect(*self._rect_start_pos, w,h)
+                rect = pygame.Rect(*self._rect_start_pos, w, h)
                 rect.normalize()
                 self.obstacles.append(rect)
                 self._rect_start_pos = None
-            elif(self.flags['drag_start']):
+                self.update_obstacles()
+
+            elif (self.flags['drag_start']):
                 self.flags['drag_start'] = False
                 collision = False
                 for obs in self.obstacles:
@@ -226,9 +250,9 @@ class App:
                         break
                 if not collision:
                     self.start_pose = self.transition_pose
+                    self.planner.update_pose(self.start_pose, self.goal_pose)
                 self.transition_pose = None
-
-            elif(self.flags['drag_goal']):
+            elif (self.flags['drag_goal']):
                 self.flags['drag_goal'] = False
                 collision = False
                 for obs in self.obstacles:
@@ -237,14 +261,15 @@ class App:
                         break
                 if not collision:
                     self.goal_pose = self.transition_pose
+                    self.planner.update_pose(self.start_pose, self.goal_pose)
                 self.transition_pose = None
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                if(self.flags['set_obs']):
+                if (self.flags['set_obs']):
                     self.flags['set_obs'] = False
                     self._rect_start_pos = None
-                if(self.flags['drag_start'] or self.flags['drag_goal']):
+                if (self.flags['drag_start'] or self.flags['drag_goal']):
                     self.transition_pose = None
                     self.flags['drag_start'] = False
                     self.flags['drag_goal'] = False
@@ -277,6 +302,7 @@ class App:
                         f'Sample Size: {self.prm_options["sample_size"]}', pygame.Rect(11, 110, 268, 40),
                         manager=self.manager,
                         container=self.option_ui_windows[State.PRM])
+                    self.update_prm_samples()
 
                 if event.ui_element == self.prm_ui_options['neighbour_slider']:
                     self.prm_options['neighbours'] = event.value
@@ -285,24 +311,32 @@ class App:
                         f'Connect to {self.prm_options["neighbours"]} neighbours', pygame.Rect(11, 200, 268, 40),
                         manager=self.manager,
                         container=self.option_ui_windows[State.PRM])
+
             if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
                 if event.ui_element == self.toolbar_buttons['add_obs']:
                     self.flags['set_obs'] = True
                 if event.ui_element == self.toolbar_buttons['generate_obs']:
                     self.obstacles = generate_obs(self.num_obstacles, self.map_pos, self.map_size, self.obs_dim)
+                    self.update_obstacles()
                 if event.ui_element == self.toolbar_buttons['reset_obs']:
                     self.obstacles = []
-
+                if event.ui_element == self.visualize_button:
+                    self.planner.create_network(self.map, self.node_radius)
+                    self.t = threading.Thread(target=self.search.solve, args=(self.planner.nodes, self.planner.get_start_node(), self.planner.get_end_node(),))
+                    self.t.start()
+                if event.ui_element == self.prm_ui_options['set_k']:
+                    print(self.prm_options['neighbours'])
+                    self.planner.update_k(self.prm_options['neighbours'])
 
     def on_loop(self):
         self.dt = self.clock.tick(60) / 1000
         self.manager.update(self.dt)
-        if(self.flags['drag_start'] or self.flags['drag_goal']):
+        if (self.flags['drag_start'] or self.flags['drag_goal']):
             pos = pygame.mouse.get_pos()
-            self.transition_pose = (pos[0]-self.map_pos[0],pos[1]-self.map_pos[1])
+            self.transition_pose = (pos[0] - self.map_pos[0], pos[1] - self.map_pos[1])
 
-        self.sx,self.sy = self.start_pose
-        self.gx,self.gy = self.goal_pose
+        self.sx, self.sy = self.start_pose
+        self.gx, self.gy = self.goal_pose
 
     def on_render(self):
         self._display_surf.fill(Color.GREY)
@@ -311,19 +345,25 @@ class App:
         pygame.draw.circle(self.map, Color.GREEN, self.start_pose, self.start_radius)
         pygame.draw.circle(self.map, Color.GREEN, self.goal_pose, self.goal_radius)
 
-        if(self.transition_pose):
+        if (self.transition_pose):
             pygame.draw.circle(self.map, Color.RED, self.transition_pose, 15)
 
         for obj in self.obstacles:
             pygame.draw.rect(self.map, Color.BLUE, obj)
-        
-        if(self._rect_start_pos):
+
+        if self._rect_start_pos:
             curr_pos = localize(self.map_pos, pygame.mouse.get_pos())
             w = curr_pos[0] - self._rect_start_pos[0]
             h = curr_pos[1] - self._rect_start_pos[1]
-            rect = pygame.Rect(*self._rect_start_pos, w,h)
+            rect = pygame.Rect(*self._rect_start_pos, w, h)
             rect.normalize()
             pygame.draw.rect(self.map, Color.BLUE, rect)
+
+        for node in self.planner.nodes:
+            node.draw(self.map, self.node_radius, 1)
+
+        for node in self.search.path:
+            pygame.draw.circle(self.map, Color.GREEN, node.get_coords(), self.node_radius+2, width=0)
 
         self.manager.draw_ui(self._display_surf)
 
@@ -364,6 +404,16 @@ class App:
             self.toolbar_buttons['add_obs'].disable()
         else:
             self.toolbar_buttons['add_obs'].enable()
+
+    def update_prm_samples(self):
+        self.planner.set_obstacles(self.obstacles)
+        self.t = threading.Thread(target=self.planner.sample, args=(self.prm_options['sample_size'],))
+        self.t.start()
+
+    def update_obstacles(self):
+        self.planner.set_obstacles(self.obstacles)
+        self.t = threading.Thread(target=self.planner.sample, args=(self.prm_options['sample_size'],))
+        self.t.start()
 
 
 if __name__ == "__main__":
