@@ -128,3 +128,65 @@ class AStar(Dijkstra):
         else:
             self.goal_found = True
             self.path = self.construct_path(sn, gn)
+
+
+class AStar(Dijkstra):
+    def __init__(self, nodes: List[Node]):
+        super().__init__(nodes)
+
+    def search(self, sn, gn):
+        while not self.pq.empty():
+            min_val, i = self.pq.get()
+            self.visited[i] = True
+            self.nodes[i].search = "AStar"
+            for neighbour in self.nodes[i].get_connections():
+                ni = neighbour.id
+                if self.visited[ni]: continue
+                if self.dist[ni] < min_val: continue
+                new_dist = self.dist[i] + self.nodes[i].get_weight(neighbour) + planners.prm.dist_to_node(neighbour, gn)
+                if new_dist < self.dist[ni]:
+                    self.dist[ni] = new_dist
+                    neighbour.parent = self.nodes[i]
+                    self.pq.put((new_dist, neighbour.id))
+            time.sleep(0.01)
+            if self.nodes[i] == gn:
+                break
+        if gn.parent is None:
+            self.path = []
+        else:
+            self.goal_found = True
+            self.path = self.construct_path(sn, gn)
+
+
+class GreedyBFS(Dijkstra):
+    def __init__(self, nodes: List[Node]):
+        super().__init__(nodes)
+
+    def search(self, sn, gn):
+        while not self.pq.empty():
+            min_val, i = self.pq.get()
+            self.visited[i] = True
+            self.nodes[i].search = "GreedyBFS"
+            for neighbour in self.nodes[i].get_connections():
+                ni = neighbour.id
+                if self.visited[ni]: continue
+                if self.dist[ni] < min_val: continue
+                new_dist = planners.prm.dist_to_node(neighbour, gn)
+                if new_dist < self.dist[ni]:
+                    self.dist[ni] = new_dist
+                    neighbour.parent = self.nodes[i]
+                    self.pq.put((new_dist, neighbour.id))
+            time.sleep(0.01)
+            if self.nodes[i] == gn:
+                break
+        if gn.parent is None:
+            self.path = []
+        else:
+            self.goal_found = True
+            self.path = self.construct_path(sn, gn)
+
+    def update_solution(self, sn, gn):
+        for node in self.nodes:
+            if node.search == "GreedyBFS":
+                node.search = None
+        self.solve(self.nodes, sn, gn)

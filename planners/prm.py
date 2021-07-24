@@ -6,6 +6,17 @@ from typing import List, Any
 import pygame
 
 
+class Color:
+    WHITE = (255, 255, 255)
+    GREY = (70, 70, 70)
+    BLUE = (0, 0, 255)
+    GREEN = (0, 255, 0)
+    RED = (255, 0, 0)
+    GREY2 = (50,50,50)
+    PURPLE = (199,21,133)
+    BROWN = (210,105,30)
+    LIGHT_BLUE = (176,196,222)
+
 def dist_to_node(n1, n2):
     return dist(n1.get_coords(), n2.get_coords())
 
@@ -30,14 +41,6 @@ def remove_edge(n1, n2):
     del n1.edge[n2]
     del n2.adj[n1]
     del n2.edge[n1]
-
-
-class Color:
-    WHITE = (255, 255, 255)
-    GREY = (70, 70, 70)
-    BLUE = (0, 0, 255)
-    GREEN = (0, 255, 0)
-    RED = (255, 0, 0)
 
 
 class Node:
@@ -74,7 +77,8 @@ class Node:
                 color = Color.BLUE
             if neighbour.search == "AStar":
                 color = Color.RED
-
+            if neighbour.search == "GreedyBFS":
+                color = Color.LIGHT_BLUE
             pygame.draw.line(surf, color, self.edge[neighbour].nfrom.get_coords(), self.edge[neighbour].nto.get_coords(), width=width)
 
     def __str__(self):

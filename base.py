@@ -3,18 +3,10 @@ import time
 
 import pygame, random, pygame_gui
 from pygame.locals import *
-from planners.prm import ProbabilisticRoadmap
-from search.search import Dijkstra, AStar
+from planners.prm import ProbabilisticRoadmap, Color
+from search.search import Dijkstra, AStar, GreedyBFS
 
 lock = threading.Lock()
-
-
-class Color:
-    WHITE = (255, 255, 255)
-    GREY = (70, 70, 70)
-    BLUE = (0, 0, 255)
-    GREEN = (0, 255, 0)
-    RED = (255, 0, 0)
 
 
 class State:
@@ -75,6 +67,7 @@ class App:
         self.map = None
         self.map_pos = (3, int(90 * self.sc))
         self.map_size = self.mapw, self.maph = int(1100 * self.sc), int(807 * self.sc)
+        self.background_colour = Color.GREY2
 
         self.clock = pygame.time.Clock()
         self.dt = 0
@@ -90,8 +83,7 @@ class App:
         self.planners = ['Probabilistic Roadmap', "RRT", "Potential Field"]
         self.default_planner = 'Probabilistic Roadmap'
 
-
-        self.searches = ['Dijkstra',  'A*']
+        self.searches = ['Dijkstra', 'A*', 'Greedy Best First']
         self.default_search = 'A*'
         self.search = None
 
@@ -130,8 +122,8 @@ class App:
 
         # ON INIT
         self.manager = None
-        self.toolbar_base =  None
-        self.toolbar_ui =  None
+        self.toolbar_base = None
+        self.toolbar_ui = None
         self.toolbar_buttons = None
         self.option_ui_panel = None
         self.option_ui_windows = None
@@ -226,9 +218,11 @@ class App:
                                                                        container=self.option_ui_windows[State.PRM]),
             'set_k': pygame_gui.elements.UIButton(pygame.Rect(11, 280, 270, 40), 'Set Neighbours', manager=self.manager,
                                                   container=self.option_ui_windows[State.PRM]),
-            'search_textbox': pygame_gui.elements.UITextBox('Search', pygame.Rect(11, 320, 270, 40), manager=self.manager,
+            'search_textbox': pygame_gui.elements.UITextBox('Search', pygame.Rect(11, 320, 270, 40),
+                                                            manager=self.manager,
                                                             container=self.option_ui_windows[State.PRM]),
-            'search_options': pygame_gui.elements.UIDropDownMenu(self.searches, self.default_search, pygame.Rect(11, 360, 270,40),  manager=self.manager,
+            'search_options': pygame_gui.elements.UIDropDownMenu(self.searches, self.default_search,
+                                                                 pygame.Rect(11, 360, 270, 40), manager=self.manager,
                                                                  container=self.option_ui_windows[State.PRM])
         }
 
@@ -242,7 +236,6 @@ class App:
 
         self.t = threading.Thread(target=self.planner.sample, args=(self.prm_options['sample_size'],))
         self.t.start()
-
 
     def on_event(self, event):
         if event.type == pygame.QUIT:
@@ -369,7 +362,7 @@ class App:
 
     def on_render(self):
         self._display_surf.fill(Color.GREY)
-        self.map.fill(Color.WHITE)
+        self.map.fill(self.background_colour)
 
         pygame.draw.circle(self.map, Color.GREEN, self.start_pose, self.start_radius)
         pygame.draw.circle(self.map, Color.GREEN, self.goal_pose, self.goal_radius)
@@ -431,6 +424,8 @@ class App:
             self.search = Dijkstra(self.planner.nodes)
         elif search == 'A*' and self.search is not AStar:
             self.search = AStar(self.planner.nodes)
+        elif search == 'Greedy Best First' and self.search is not GreedyBFS:
+            self.search = GreedyBFS(self.planner.nodes)
 
     def update_prm_samples(self):
         self.planner.set_obstacles(self.obstacles)
@@ -441,6 +436,7 @@ class App:
     def generate_obstacles(self):
         self.obstacles = generate_obs(self.num_obstacles, self.map_pos, self.map_size, self.obs_dim)
         self.planner.set_obstacles(self.obstacles)
+        self.planner.nodes = []
         self.search.path = []
         self.t = threading.Thread(target=self.planner.sample, args=(self.prm_options['sample_size'],))
         self.t.start()
