@@ -1,12 +1,10 @@
+import sys
 import threading
-import time
 
 import pygame, random, pygame_gui
 from pygame.locals import *
-from planners.prm import ProbabilisticRoadmap, Color
+from planners.planners import ProbabilisticRoadmap, Color, RRT, PotentialField, CircularObstacle
 from search.search import Dijkstra, AStar, GreedyBFS
-
-lock = threading.Lock()
 
 
 class State:
@@ -34,7 +32,7 @@ def sample_envir(map_pos, map_dim, obs_dim):
 
 
 def localize(map, pos):
-    return (pos[0] - map[0], pos[1] - map[1])
+    return pos[0] - map[0], pos[1] - map[1]
 
 
 # TODO: start, goal collision checking
@@ -54,6 +52,21 @@ def generate_obs(num_obstacles, map_pos, map_dim, obs_dim):
                     break
         obs.append(rect)
     return obs
+
+
+def generate_circle_obs(num_obstacles, map_pos, map_size, circle_obs_dim, goal_pose):
+    obs = []
+    for i in range(num_obstacles):
+        collision = True
+        while collision:
+            pos = sample_envir(map_pos, map_size, (circle_obs_dim,circle_obs_dim))
+            rad = int(random.uniform(10, circle_obs_dim))
+            circle = CircularObstacle(*pos,rad)
+            collision = circle.collidepoint(goal_pose)
+
+        obs.append(circle)
+    return obs
+
 
 
 class App:
@@ -81,7 +94,8 @@ class App:
         self.optionp_size = self.optionp_w, self.optionp_h = int(0.234375 * self.width), self.height
 
         self.planners = ['Probabilistic Roadmap', "RRT", "Potential Field"]
-        self.default_planner = 'Probabilistic Roadmap'
+        self.default_planner = 'RRT'
+        self.state = State.RRT
 
         self.searches = ['Dijkstra', 'A*', 'Greedy Best First']
         self.default_search = 'A*'
@@ -89,6 +103,7 @@ class App:
 
         self.obstacles = []
         self.obs_dim = (50, 50)
+        self.circle_obs_dim = 50
         self._rect_start_pos = None
         self.num_obstacles = 20
 
@@ -104,13 +119,13 @@ class App:
 
         # PRM OPTIONS
         self.prm_options = {
-            'sample_size': 500,
-            'neighbours': 5
+            'sample_size': 800,
+            'neighbours': 10
         }
 
         # RRT OPTIONS
         self.rrt_options = {
-            'bias': 10
+            'bias': 0.1
         }
 
         # FLAGS
@@ -263,13 +278,26 @@ class App:
         self.change_state(self.default_planner)
         self._running = True
 
-        self.planner = ProbabilisticRoadmap(self.map_size, self.start_pose, self.start_radius, self.goal_pose,
-                                            self.goal_radius, self.obstacles,
-                                            self.prm_options['neighbours'])
-        self.search = AStar(self.planner.nodes)
+        self.init_state()
 
-        self.t = threading.Thread(target=self.planner.sample, args=(self.prm_options['sample_size'],))
-        self.t.start()
+    def init_state(self):
+        if self.state == State.PRM:
+            self.planner = ProbabilisticRoadmap(self.map_size, self.start_pose, self.start_radius, self.goal_pose,
+                                                self.goal_radius, self.obstacles,
+                                                self.prm_options['neighbours'])
+            self.search = AStar(self.planner.nodes)
+
+            self.t = threading.Thread(target=self.planner.sample, args=(self.prm_options['sample_size'],))
+            self.t.start()
+        elif self.state == State.RRT:
+            self.planner = RRT(self.map_size, self.start_pose, self.start_radius, self.goal_pose,
+                               self.goal_radius, self.obstacles,
+                               self.rrt_options['bias'])
+        elif self.state == State.PF:
+            self.obstacles = []
+            self.planner = PotentialField(self.map_size, self.start_pose, self.start_radius, self.goal_pose, self.goal_radius, self.obstacles, self.map)
+            self.t = threading.Thread(target=self.planner.start)
+            self.t.start()
 
     def on_event(self, event):
         if event.type == pygame.QUIT:
@@ -353,6 +381,7 @@ class App:
                     self.rrt_ui_options['bias_slider_textbox'] = pygame_gui.elements.UITextBox(
                         f'Bias: {self.rrt_options["bias"]}', pygame.Rect(11, 110, 268, 40), manager=self.manager,
                         container=self.option_ui_windows[State.RRT])
+                    self.planner.set_bias(self.rrt_options['bias'])
 
                 if event.ui_element == self.prm_ui_options['sample_slider']:
                     self.prm_options['sample_size'] = event.value
@@ -419,6 +448,7 @@ class App:
 
     def on_cleanup(self):
         pygame.quit()
+        sys.exit()
 
     def on_execute(self):
         if self.on_init() == False:
@@ -435,11 +465,22 @@ class App:
 
     def change_state(self, state):
         if state == 'Probabilistic Roadmap':
-            self.state = State.PRM
+            if self.state != state:
+                if self.state == State.PF:
+                    self.obstacles = []
+                self.state = State.PRM
+                self.init_state()
         elif state == 'RRT':
-            self.state = State.RRT
+            if self.state != state:
+                if self.state == State.PF:
+                    self.obstacles = []
+                self.state = State.RRT
+                self.init_state()
         elif state == 'Potential Field':
-            self.state = State.PF
+            if self.state != state:
+                self.state = State.PF
+                self.init_state()
+
         self.change_active_options(self.state)
 
     def change_active_options(self, state):
@@ -455,11 +496,21 @@ class App:
 
     def change_search(self, search):
         if search == 'Dijkstra' and self.search is not Dijkstra:
+            path = self.search.path
             self.search = Dijkstra(self.planner.nodes)
+            self.search.path = path
         elif search == 'A*' and self.search is not AStar:
+            path = self.search.path
             self.search = AStar(self.planner.nodes)
+            self.search.path = path
         elif search == 'Greedy Best First' and self.search is not GreedyBFS:
+            path = self.search.path
             self.search = GreedyBFS(self.planner.nodes)
+            self.search.path = path
+        for node in self.planner.nodes:
+            node.parent = None
+            if node.search == self.search.name:
+                node.search = None
 
     def update_prm_samples(self):
         self.planner.set_obstacles(self.obstacles)
@@ -468,18 +519,33 @@ class App:
         self.t.start()
 
     def generate_obstacles(self):
-        self.obstacles = generate_obs(self.num_obstacles, self.map_pos, self.map_size, self.obs_dim)
-        self.planner.set_obstacles(self.obstacles)
-        self.planner.nodes = []
-        self.search.path = []
-        self.t = threading.Thread(target=self.planner.sample, args=(self.prm_options['sample_size'],))
-        self.t.start()
+        if self.state == State.PRM:
+            self.obstacles = generate_obs(self.num_obstacles, self.map_pos, self.map_size, self.obs_dim)
+            self.planner.set_obstacles(self.obstacles)
+            self.planner.nodes = []
+
+            self.search.path = []
+            self.t = threading.Thread(target=self.planner.sample, args=(self.prm_options['sample_size'],))
+            self.t.start()
+        elif self.state == State.RRT:
+            self.obstacles = generate_obs(self.num_obstacles, self.map_pos, self.map_size, self.obs_dim)
+            self.planner.set_obstacles(self.obstacles)
+            self.planner.nodes = []
+
+        elif self.state == State.PF:
+            self.obstacles = generate_circle_obs(self.num_obstacles, self.map_pos, self.map_size, self.circle_obs_dim, self.goal_pose)
+            self.planner.set_obstacles(self.obstacles)
 
     def add_obstacle(self, rect):
         self.obstacles.append(rect)
         self.planner.set_obstacles(self.obstacles)
-        self.t = threading.Thread(target=self.planner.sample, args=(self.prm_options['sample_size'],))
-        self.t.start()
+        if self.state == State.PRM:
+            self.t = threading.Thread(target=self.planner.sample, args=(self.prm_options['sample_size'],))
+            self.t.start()
+        elif self.state == State.RRT:
+            pass
+        elif self.state == State.PF:
+            pass
 
     def renderState(self):
         if self.state == State.PRM:
@@ -492,6 +558,24 @@ class App:
             for node in self.search.path:
                 pygame.draw.circle(self.map, Color.GREEN, node.get_coords(), self.node_radius + 2, width=0)
 
+        if self.state == State.RRT:
+            for obj in self.obstacles:
+                pygame.draw.rect(self.map, Color.BLUE, obj)
+
+            for node in self.planner.nodes:
+                node.draw(self.map, self.node_radius, 1)
+
+            for node in self.planner.path:
+                pygame.draw.circle(self.map, Color.RED, node.get_coords(), self.node_radius + 2, width=0)
+
+        if self.state == State.PF:
+            for obs in self.obstacles:
+                pygame.draw.circle(self.map, Color.RED, (obs.x,obs.y), obs.rad, width=0)
+            self.planner.draw(self.map)
+            for node in self.planner.path:
+                pygame.draw.circle(self.map, Color.LIGHT_BLUE, node.get_coords(), self.node_radius, width=0)
+
+
     def simulateState(self):
         if self.state == State.PRM:
             self.planner.create_network(self.map, self.node_radius, self.prm_options['neighbours'])
@@ -499,20 +583,40 @@ class App:
                 self.t = threading.Thread(target=self.search.solve, args=(
                     self.planner.nodes, self.planner.get_start_node(), self.planner.get_end_node(),))
                 self.t.start()
+        if self.state == State.RRT:
+            if self.t is None or not self.t.is_alive():
+                self.t = threading.Thread(target=self.planner.start, daemon=True)
+                self.t.start()
+        if self.state ==  State.PF:
+            if self.t is None or not self.t.is_alive():
+                self.t = threading.Thread(target=self.planner.start, daemon=True)
+                self.t.start()
 
     def update_pose(self):
+        self.planner.update_pose(self.start_pose, self.goal_pose)
         if self.state == State.PRM:
-            self.planner.update_pose(self.start_pose, self.goal_pose)
             self.t = threading.Thread(target=self.search.update_solution,
                                       args=(self.planner.get_start_node(), self.planner.get_end_node(),))
             self.t.start()
             self.t.join()
+        elif self.state == State.RRT:
+            if self.t is None or not self.t.is_alive():
+                self.t = threading.Thread(target=self.planner.start, daemon=True)
+                self.t.start()
+        elif self.state == State.PF:
+            if self.t is None or not self.t.is_alive():
+                self.t = threading.Thread(target=self.planner.start, daemon=True)
+                self.t.start()
 
     def resetObstacles(self):
         if self.state == State.PRM:
             self.planner.obstacles = []
             self.obstacles = []
             self.search.path = []
+        elif self.state == State.RRT:
+            self.planner.obstacles = []
+            self.obstacles = []
+            self.planner.path = []
 
 
 if __name__ == "__main__":
