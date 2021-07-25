@@ -185,10 +185,10 @@ class App:
 
         self.option_ui_windows = {
             State.RRT: pygame_gui.core.UIContainer(
-                relative_rect=pygame.Rect((0, 130), self.optionp_size), manager=self.manager,
+                relative_rect=pygame.Rect((0, 120), self.optionp_size), manager=self.manager,
                 object_id='rrt', container=self.option_ui_panel),
             State.PRM: pygame_gui.core.UIContainer(
-                relative_rect=pygame.Rect((0, 130), self.optionp_size), manager=self.manager,
+                relative_rect=pygame.Rect((0, 120), self.optionp_size), manager=self.manager,
                 object_id='prm', container=self.option_ui_panel),
             State.PF: pygame_gui.core.UIContainer(
                 relative_rect=pygame.Rect((0, self.optionp_h / 3.5), self.optionp_size), manager=self.manager,
@@ -231,11 +231,12 @@ class App:
                                                                        manager=self.manager,
                                                                        container=self.option_ui_windows[State.PRM]),
             'set_k': pygame_gui.elements.UIButton(relative_rect=pygame.Rect(20,235,250,40), text='Set Neighbours', manager=self.manager, container=self.option_ui_windows[State.PRM]),
-            'search_textbox': pygame_gui.elements.UITextBox('Search', pygame.Rect(11, 320, 270, 40),
-                                                            manager=self.manager,
-                                                            container=self.option_ui_windows[State.PRM]),
+            'search_textbox': pygame_gui.elements.UILabel(relative_rect=pygame.Rect(20, 285, 60, 40), # the drop down menu keeps moving the label ???
+                                                          text='Search',
+                                                          manager=self.manager,
+                                                          container=self.option_ui_windows[State.PRM]),
             'search_options': pygame_gui.elements.UIDropDownMenu(self.searches, self.default_search,
-                                                                 pygame.Rect(11, 360, 270, 40), manager=self.manager,
+                                                                 pygame.Rect(20, 320, 250, 40), manager=self.manager,
                                                                  container=self.option_ui_windows[State.PRM])
         }
         self.rrt_ui_options = {
