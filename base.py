@@ -67,22 +67,22 @@ class App:
         self.sc = 0.8
         self._running = True
         self._display_surf = None
-        self.size = self.width, self.height = int(1400 * self.sc), int(900 * self.sc)
+        self.size = self.width, self.height = int(1600 * self.sc), int(820 * self.sc) # og: 1600 x 820, test: 2000 x 900
 
         self.map = None
-        self.map_pos = (3, int(90 * self.sc))
-        self.map_size = self.mapw, self.maph = int(1100 * self.sc), int(807 * self.sc)
+        self.map_pos = (0, int(0.12 * self.height))
+        self.map_size = self.mapw, self.maph = int(0.771 * self.width), int(0.87805 * self.height)
 
         self.clock = pygame.time.Clock()
         self.dt = 0
 
-        self.toolbar_pos = (3, 3)
-        self.toolbar_size = self.toolbarw, self.toolbarh = int(1393 * self.sc), int(83 * self.sc)
+        self.toolbar_pos = (-1, 0)
+        self.toolbar_size = self.toolbarw, self.toolbarh = int(1.01 * self.width), int(0.122 * self.height)
 
         self.state = State.PRM
 
-        self.optionp_pos = (int(1106 * self.sc), int(90 * self.sc))
-        self.optionp_size = self.optionp_w, self.optionp_h = int(290 * self.sc), int(807 * self.sc)
+        self.optionp_pos = (int(0.76875 * self.width), int(0.95 * self.toolbarh))
+        self.optionp_size = self.optionp_w, self.optionp_h = int(0.234375 * self.width), self.height
 
         self.planners = ['Probabilistic Roadmap', "RRT", "Potential Field"]
         self.default_planner = 'Probabilistic Roadmap'
@@ -94,7 +94,7 @@ class App:
 
         self.start_pose = self.sx, self.sy = (20, 20)
         self.start_radius = 10
-        self.goal_pose = self.gx, self.gy = (600, 600)
+        self.goal_pose = self.gx, self.gy = (int(0.5 * self.mapw), int(0.5 * self.maph))
         self.goal_radius = 20
         self.node_radius = 5
 
@@ -133,15 +133,33 @@ class App:
                                                       object_id='toolbar')
         self.toolbar_buttons = {
             'planner_select': pygame_gui.elements.UIDropDownMenu(self.planners, self.default_planner,
-                                                                 pygame.Rect((42, 15), (243, 58)), manager=self.manager,
+                                                                 pygame.Rect((20, 15), (250, 50)), manager=self.manager,
                                                                  container=self.toolbar_base,
                                                                  expansion_height_limit=100),
-            'add_obs': pygame_gui.elements.UIButton(pygame.Rect((399, 12), (243, 58)), 'Add Obstacles',
-                                                    manager=self.manager, container=self.toolbar_ui),
-            'generate_obs': pygame_gui.elements.UIButton(pygame.Rect((756, 12), (243, 58)), 'Generate Obstacles',
-                                                         manager=self.manager, container=self.toolbar_ui),
-            'reset_obs': pygame_gui.elements.UIButton(pygame.Rect((1113, 12), (243, 58)), 'Reset Obstacles',
-                                                      manager=self.manager, container=self.toolbar_ui)
+            'add_obs': pygame_gui.elements.UIButton(relative_rect=pygame.Rect((350, 12), (250, 50)), 
+                                                    text='Add Obstacles',
+                                                    manager=self.manager, 
+                                                    container=self.toolbar_ui,
+                                                    anchors={'left': 'left',
+                                                                  'right': 'right',
+                                                                  'top': 'top',
+                                                                  'bottom': 'bottom'}),
+            'generate_obs': pygame_gui.elements.UIButton(relative_rect=pygame.Rect((680, 12), (250, 50)), 
+                                                         text='Generate Obstacles',
+                                                         manager=self.manager, 
+                                                         container=self.toolbar_ui,
+                                                         anchors={'left': 'left',
+                                                                  'right': 'right',
+                                                                  'top': 'top',
+                                                                  'bottom': 'bottom'}),
+            'reset_obs': pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1010, 12), (250, 50)), 
+                                                      text='Reset Obstacles',
+                                                      manager=self.manager, 
+                                                      container=self.toolbar_ui,
+                                                      anchors={'left': 'left',
+                                                                  'right': 'right',
+                                                                  'top': 'top',
+                                                                  'bottom': 'bottom'})
         }
 
         self.option_ui_panel = pygame_gui.elements.UIPanel(
@@ -150,57 +168,73 @@ class App:
 
         self.option_ui_windows = {
             State.RRT: pygame_gui.core.UIContainer(
-                relative_rect=pygame.Rect((0, self.optionp_h / 3.5), self.optionp_size), manager=self.manager,
+                relative_rect=pygame.Rect((0, 130), self.optionp_size), manager=self.manager,
                 object_id='rrt', container=self.option_ui_panel),
             State.PRM: pygame_gui.core.UIContainer(
-                relative_rect=pygame.Rect((0, self.optionp_h / 3.5), self.optionp_size), manager=self.manager,
+                relative_rect=pygame.Rect((0, 130), self.optionp_size), manager=self.manager,
                 object_id='prm', container=self.option_ui_panel),
             State.PF: pygame_gui.core.UIContainer(
                 relative_rect=pygame.Rect((0, self.optionp_h / 3.5), self.optionp_size), manager=self.manager,
                 object_id='pf', container=self.option_ui_panel),
         }
 
-        self.option_title = pygame_gui.elements.UITextBox('General Options', pygame.Rect(11, 17, 268, 61),
-                                                          manager=self.manager, container=self.option_ui_panel)
-        self.obstacle_textbox = pygame_gui.elements.UITextBox(f'Generate {self.num_obstacles} Obstacles',
-                                                              pygame.Rect(11, 110, 268, 40), manager=self.manager,
-                                                              container=self.option_ui_panel)
-        self.obstacle_slider = pygame_gui.elements.UIHorizontalSlider(pygame.Rect(10, 150, 270, 40), self.num_obstacles,
-                                                                      (1, 50), manager=self.manager,
+        self.option_title = pygame_gui.elements.UILabel(relative_rect=pygame.Rect(20, 20, 135, 40),
+                                                        text='General Options',
+                                                        manager=self.manager, 
+                                                        container=self.option_ui_panel)
+        self.obstacle_textbox = pygame_gui.elements.UILabel(relative_rect=pygame.Rect(20, 60, 180, 35),
+                                                            text=f'Generate {self.num_obstacles} Obstacles', 
+                                                            manager=self.manager,
+                                                            container=self.option_ui_panel)
+        self.obstacle_slider = pygame_gui.elements.UIHorizontalSlider(relative_rect=pygame.Rect(25, 95, 250, 40), 
+                                                                      start_value=self.num_obstacles,
+                                                                      value_range=(1, 50), 
+                                                                      manager=self.manager,
                                                                       container=self.option_ui_panel)
-        self.visualize_button = pygame_gui.elements.UIButton(pygame.Rect(18, 729, 255, 60), "Simulate!",
-                                                             manager=self.manager, container=self.option_ui_panel)
-
+        self.prm_ui_options = {
+            'title': pygame_gui.elements.UILabel(relative_rect=pygame.Rect(20, 20, 105, 40),
+                                                 text='PRM Options',  
+                                                 manager=self.manager,
+                                                 container=self.option_ui_windows[State.PRM]),
+            'sample_slider_textbox': pygame_gui.elements.UILabel(relative_rect=pygame.Rect(20, 60, 145, 35), 
+                                                                 text=f'Sample Size: {self.prm_options["sample_size"]}',
+                                                                 manager=self.manager,
+                                                                 container=self.option_ui_windows[State.PRM]),
+            'sample_slider': pygame_gui.elements.UIHorizontalSlider(relative_rect=pygame.Rect(20, 95, 250, 40),
+                                                                    start_value=self.prm_options['sample_size'], 
+                                                                    value_range=(100, 1500),
+                                                                    manager=self.manager,
+                                                                    container=self.option_ui_windows[State.PRM]),
+            'neighbour_slider_textbox': pygame_gui.elements.UILabel(relative_rect=pygame.Rect(20, 150, 196, 35),
+                                                                    text=f'Connect to {self.prm_options["neighbours"]} neighbours', 
+                                                                    manager=self.manager, container=self.option_ui_windows[State.PRM]),
+            'neighbour_slider': pygame_gui.elements.UIHorizontalSlider(relative_rect=pygame.Rect(20, 185, 250, 40),
+                                                                       start_value=self.prm_options['neighbours'], 
+                                                                       value_range=(1, 10),
+                                                                       manager=self.manager,
+                                                                       container=self.option_ui_windows[State.PRM]),
+            'set_k': pygame_gui.elements.UIButton(relative_rect=pygame.Rect(20,235,250,40), text='Set Neighbours', manager=self.manager, container=self.option_ui_windows[State.PRM])
+        }
         self.rrt_ui_options = {
-            'title': pygame_gui.elements.UITextBox('RRT Options', pygame.Rect(11, 17, 268, 61), manager=self.manager,
-                                                   container=self.option_ui_windows[State.RRT]),
-            'bias_slider_textbox': pygame_gui.elements.UITextBox(f'Bias: {self.rrt_options["bias"]}',
-                                                                 pygame.Rect(11, 110, 268, 40), manager=self.manager,
-                                                                 container=self.option_ui_windows[State.RRT]),
-            'bias_slider': pygame_gui.elements.UIHorizontalSlider(pygame.Rect(10, 150, 270, 40), 0.1, (0, 1),
+            'title': pygame_gui.elements.UILabel(relative_rect=pygame.Rect(20, 20, 105, 40),
+                                                 text='RRT Options',
+                                                 manager=self.manager,
+                                                 container=self.option_ui_windows[State.RRT]),
+            'bias_slider_textbox': pygame_gui.elements.UILabel(relative_rect=pygame.Rect(20, 60, 80, 35),
+                                                               text=f'Bias: {self.rrt_options["bias"]}', 
+                                                               manager=self.manager,
+                                                               container=self.option_ui_windows[State.RRT]),
+            'bias_slider': pygame_gui.elements.UIHorizontalSlider(relative_rect=pygame.Rect(20, 95, 250, 40),
+                                                                  start_value=0.1, 
+                                                                  value_range=(0, 1),
                                                                   manager=self.manager,
                                                                   container=self.option_ui_windows[State.RRT])
         }
-
-        self.prm_ui_options = {
-            'title': pygame_gui.elements.UITextBox('PRM Options', pygame.Rect(11, 17, 268, 61), manager=self.manager,
-                                                   container=self.option_ui_windows[State.PRM]),
-            'sample_slider_textbox': pygame_gui.elements.UITextBox(f'Sample Size: {self.prm_options["sample_size"]}',
-                                                                   pygame.Rect(11, 110, 268, 40), manager=self.manager,
-                                                                   container=self.option_ui_windows[State.PRM]),
-            'sample_slider': pygame_gui.elements.UIHorizontalSlider(pygame.Rect(10, 150, 270, 40),
-                                                                    self.prm_options['sample_size'], (100, 1500),
-                                                                    manager=self.manager,
-                                                                    container=self.option_ui_windows[State.PRM]),
-            'neighbour_slider_textbox': pygame_gui.elements.UITextBox(
-                f'Connect to {self.prm_options["neighbours"]} neighbours', pygame.Rect(11, 200, 268, 40),
-                manager=self.manager, container=self.option_ui_windows[State.PRM]),
-            'neighbour_slider': pygame_gui.elements.UIHorizontalSlider(pygame.Rect(10, 240, 270, 40),
-                                                                       self.prm_options['neighbours'], (1, 10),
-                                                                       manager=self.manager,
-                                                                       container=self.option_ui_windows[State.PRM]),
-            'set_k': pygame_gui.elements.UIButton(pygame.Rect(10,280,270,40), 'Set Neighbours', manager=self.manager, container=self.option_ui_windows[State.PRM])
-        }
+        self.visualize_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect(20, 490, 250, 60), 
+                                                             text="Simulate!",
+                                                             manager=self.manager, 
+                                                             container=self.option_ui_panel,
+                                                             object_id='simulate')
 
         self.change_state(self.default_planner)
         self._running = True
@@ -283,10 +317,10 @@ class App:
                 if event.ui_element == self.obstacle_slider:
                     self.num_obstacles = event.value
                     self.obstacle_textbox.kill()
-                    self.obstacle_textbox = pygame_gui.elements.UITextBox(f'Generate {self.num_obstacles} Obstacles',
-                                                                          pygame.Rect(11, 110, 268, 40),
-                                                                          manager=self.manager,
-                                                                          container=self.option_ui_panel)
+                    self.obstacle_textbox = pygame_gui.elements.UILabel(relative_rect=pygame.Rect(20, 60, 180, 35),
+                                                                        text=f'Generate {self.num_obstacles} Obstacles',
+                                                                        manager=self.manager,
+                                                                        container=self.option_ui_panel)
 
                 if event.ui_element == self.rrt_ui_options['bias_slider']:
                     self.rrt_options['bias'] = round(event.value, 2)
@@ -298,8 +332,8 @@ class App:
                 if event.ui_element == self.prm_ui_options['sample_slider']:
                     self.prm_options['sample_size'] = event.value
                     self.prm_ui_options['sample_slider_textbox'].kill()
-                    self.prm_ui_options['sample_slider_textbox'] = pygame_gui.elements.UITextBox(
-                        f'Sample Size: {self.prm_options["sample_size"]}', pygame.Rect(11, 110, 268, 40),
+                    self.prm_ui_options['sample_slider_textbox'] = pygame_gui.elements.UILabel(relative_rect=pygame.Rect(20, 60, 145, 35),
+                        text=f'Sample Size: {self.prm_options["sample_size"]}', 
                         manager=self.manager,
                         container=self.option_ui_windows[State.PRM])
                     self.update_prm_samples()
@@ -307,8 +341,8 @@ class App:
                 if event.ui_element == self.prm_ui_options['neighbour_slider']:
                     self.prm_options['neighbours'] = event.value
                     self.prm_ui_options['neighbour_slider_textbox'].kill()
-                    self.prm_ui_options['neighbour_slider_textbox'] = pygame_gui.elements.UITextBox(
-                        f'Connect to {self.prm_options["neighbours"]} neighbours', pygame.Rect(11, 200, 268, 40),
+                    self.prm_ui_options['neighbour_slider_textbox'] = pygame_gui.elements.UILabel(relative_rect=pygame.Rect(20, 150, 196, 35),
+                        text=f'Connect to {self.prm_options["neighbours"]} neighbours', 
                         manager=self.manager,
                         container=self.option_ui_windows[State.PRM])
 
@@ -339,8 +373,8 @@ class App:
         self.gx, self.gy = self.goal_pose
 
     def on_render(self):
-        self._display_surf.fill(Color.GREY)
-        self.map.fill(Color.WHITE)
+        self._display_surf.fill("#45494e")
+        self.map.fill("#303136")
 
         pygame.draw.circle(self.map, Color.GREEN, self.start_pose, self.start_radius)
         pygame.draw.circle(self.map, Color.GREEN, self.goal_pose, self.goal_radius)

@@ -3,11 +3,11 @@
     {
         "colours":
         {
-            "normal_bg":"#FFC0CB",
+            "normal_bg":"#45494e",
             "hovered_bg":"#35393e",
             "disabled_bg":"#25292e",
             "selected_bg":"#193754",
-            "dark_bg":"#15191e",
+            "dark_bg":"#303136",
             "normal_text":"#c5cbd8",
             "hovered_text":"#FFFFFF",
             "selected_text":"#FFFFFF",
@@ -23,6 +23,163 @@
             "active_border": "#8080B0",
             "filled_bar":"#f4251b",
             "unfilled_bar":"#CCCCCC"
+        },
+
+        "font":
+        {
+            "size": 24
+        }
+    },
+
+    "toolbar":
+    {
+        "colours":
+        {
+            "normal_bg":"#363940",
+            "hovered_bg":"#363940",
+            "disabled_bg":"#363940",
+            "selected_bg":"#363940",
+            "active_bg":"#363940",
+            "dark_bg":"#363940",
+            "normal_text":"#c5cbd8",
+            "hovered_text":"#FFFFFF",
+            "selected_text":"#FFFFFF",
+            "disabled_text":"#6d736f",
+            "active_text":"#FFFFFF",
+            "normal_border": "#363940",
+            "hovered_border": "#363940",
+            "disabled_border": "#363940",
+            "selected_border": "#363940",
+            "active_border": "#363940"
+        }
+    },
+
+    "option_panel":
+    {
+        "colours":
+        {
+            "normal_bg":"#363940",
+            "hovered_bg":"#363940",
+            "disabled_bg":"#363940",
+            "selected_bg":"#363940",
+            "active_bg":"#363940",
+            "dark_bg":"#363940",
+            "normal_text":"#c5cbd8",
+            "hovered_text":"#FFFFFF",
+            "selected_text":"#FFFFFF",
+            "disabled_text":"#6d736f",
+            "active_text":"#FFFFFF",
+            "normal_border": "#363940",
+            "hovered_border": "#363940",
+            "disabled_border": "#363940",
+            "selected_border": "#363940",
+            "active_border": "#363940"
+        }
+    },
+
+    "button":
+    {
+        "colours":
+        {
+            "normal_bg":"#303136",
+            "hovered_bg":"#D6D8FD",
+            "active_bg": "#5862D9",
+            "normal_text": "#D6D8FD",
+            "hovered_text": "#303136",
+            "active_text": "#FFFFFF",
+            "normal_border": "#D6D8FD",
+            "hovered_border": "#D6D8FD",
+            "active_border": "#5862D9"
+        },
+
+        "misc":
+        {
+            "shape": "rounded_rectangle",
+            "shape_corner_radius": "8",
+            "border_width": "1.5"
+        }
+    },
+
+    "drop_down_menu":
+    {
+        "colours":
+        {
+            "normal_bg":"#303136",
+            "hovered_bg":"#D6D8FD",
+            "active_bg": "#5862D9",
+            "normal_text": "#D6D8FD",
+            "hovered_text": "#303136",
+            "active_text": "#FFFFFF",
+            "normal_border": "#D6D8FD",
+            "hovered_border": "#D6D8FD",
+            "active_border": "#5862D9"
+        },
+
+        "misc":
+        {
+            "shape": "rounded_rectangle",
+            "shape_corner_radius": "8",
+            "border_width": "1.5"
+        }
+    },
+
+    "drop_down_menu.text_box":
+    {
+        "misc":
+        {
+            "shape": "rounded_rectangle",
+            "shape_corner_radius": "8"
+        }
+    },
+
+    "label": 
+    {
+        "colours":
+        {
+            "dark_bg":"#363940",
+            "normal_text": "#D6D8FD",
+            "hovered_text": "#303136",
+            "normal_border": "#363940"
+        }
+    },
+
+    "horizontal_slider": 
+    {
+        "misc":
+        {
+            "shape": "rounded_rectangle",
+            "shape_corner_radius": "50",
+            "normal_border": "#363940",
+            "enable_arrow_buttons": "0",
+            "sliding_button_width": "33"
+        }
+    },
+
+    "horizontal_slider.button":
+    {
+        "colours":
+        {
+            "normal_bg":"#D6D8FD",
+            "active_bg": "#5862D9"
+        },
+
+        "misc":
+        {
+            "shape": "rounded_rectangle",
+            "shape_corner_radius": "25"
+        }
+    },
+
+    "simulate":
+    {
+        "colours":
+        {
+            "normal_bg": "#5862D9",
+            "hovered_bg":"#D6D8FD",
+            "active_bg": "#5E60A8",
+            "normal_border": "#5862D9",
+            "hovered_border": "#5862D9",
+            "active_border": "#5E60A8"
         }
     }
 }
