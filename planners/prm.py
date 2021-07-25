@@ -6,6 +6,17 @@ from typing import List, Any
 import pygame
 
 
+class Color:
+    WHITE = (255, 255, 255)
+    GREY = (70, 70, 70)
+    BLUE = (0, 0, 255)
+    GREEN = (0, 255, 0)
+    RED = (255, 0, 0)
+    GREY2 = (50,50,50)
+    PURPLE = (199,21,133)
+    BROWN = (210,105,30)
+    LIGHT_BLUE = (176,196,222)
+
 def dist_to_node(n1, n2):
     return dist(n1.get_coords(), n2.get_coords())
 
@@ -30,14 +41,6 @@ def remove_edge(n1, n2):
     del n1.edge[n2]
     del n2.adj[n1]
     del n2.edge[n1]
-
-
-class Color:
-    WHITE = (255, 255, 255)
-    GREY = (70, 70, 70)
-    BLUE = (0, 0, 255)
-    GREEN = (0, 255, 0)
-    RED = (255, 0, 0)
 
 
 class Node:
@@ -68,12 +71,15 @@ class Node:
 
     def draw(self, surf, node_radius, width):
         pygame.draw.circle(surf, Color.RED, self.get_coords(), node_radius, width=0)
-        for edge in self.edge:
+        for neighbour in self.edge:
             color = Color.GREY
-            if edge.search == "Dijkstra":
+            if neighbour.search == "Dijkstra":
                 color = Color.BLUE
-
-            pygame.draw.line(surf, color, self.edge[edge].nfrom.get_coords(), self.edge[edge].nto.get_coords(), width=width)
+            if neighbour.search == "AStar":
+                color = Color.RED
+            if neighbour.search == "GreedyBFS":
+                color = Color.LIGHT_BLUE
+            pygame.draw.line(surf, color, self.edge[neighbour].nfrom.get_coords(), self.edge[neighbour].nto.get_coords(), width=width)
 
     def __str__(self):
         return f"{self.x}, {self.y}, {self.id}"
@@ -217,7 +223,8 @@ class ProbabilisticRoadmap:
     def get_end_node(self):
         return self.find_node_in_radius(self.goal_pose, self.goal_radius)
 
-    def create_network(self, surf, nr):
+    def create_network(self, surf, nr, neighbours):
+        self.k = neighbours
         for node in self.nodes:
             node.adj = {}
             node.edge = {}
@@ -233,6 +240,9 @@ class ProbabilisticRoadmap:
             self.update_edges_lt(node)
 
     def update_k(self, k):
+        for node in self.nodes:
+            node.search = None
+            node.parent = None
         if k > self.k:
             self.k = k
             self.update_network_gt()
