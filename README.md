@@ -146,7 +146,7 @@ the goal pose.
 
 ### Virtual Fields
 A problem with the potential field planner is that it is easy for the planner to get stuck in local
-minima traps. Thus the Virtual Field method proposed by Ding Fu-guang in [this paper](https://ieeexplore-ieee-org.proxy.lib.uwaterloo.ca/stamp/stamp.jsp?tp=&arnumber=1626816)
+minima traps. Thus the Virtual Field method proposed by Ding Fu-guang in [this paper](https://ieeexplore.ieee.org/document/1626816)
 has been implemented to steer the path towards the open free space in the instance where the path is stuck.
 ![Virtual Field](https://i.imgur.com/MvO76Wq.gif)
 
