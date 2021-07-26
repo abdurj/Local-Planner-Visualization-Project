@@ -128,6 +128,11 @@ class App:
             'bias': 0.1
         }
 
+
+        self.pf_options = {
+            'virtual': True
+        }
+
         # FLAGS
         self.flags = {
             'set_obs': False,
@@ -148,12 +153,14 @@ class App:
         self.visualize_button = None
         self.rrt_ui_options = None
         self.prm_ui_options = None
+        self.pf_ui_options = None
         self.planner = None
         self.search = None
         self.t = None
 
     def on_init(self):
         pygame.init()
+        pygame.display.set_caption("Local Planner Visualization Project")
         self._display_surf = pygame.display.set_mode(self.size, pygame.HWSURFACE | pygame.DOUBLEBUF)
         self.manager = pygame_gui.UIManager(self.size, 'theme.json')
         self.map = pygame.Surface.subsurface(self._display_surf, (self.map_pos, self.map_size))
@@ -244,7 +251,7 @@ class App:
                                                                     manager=self.manager, container=self.option_ui_windows[State.PRM]),
             'neighbour_slider': pygame_gui.elements.UIHorizontalSlider(relative_rect=pygame.Rect(20, 185, 250, 40),
                                                                        start_value=self.prm_options['neighbours'], 
-                                                                       value_range=(1, 10),
+                                                                       value_range=(1, 20),
                                                                        manager=self.manager,
                                                                        container=self.option_ui_windows[State.PRM]),
             'set_k': pygame_gui.elements.UIButton(relative_rect=pygame.Rect(20,235,250,40), text='Set Neighbours', manager=self.manager, container=self.option_ui_windows[State.PRM]),
@@ -277,6 +284,16 @@ class App:
                                                              container=self.option_ui_panel,
                                                              object_id='simulate')
 
+        self.pf_ui_options = {
+            'title': pygame_gui.elements.UITextBox('Potential Field Options', pygame.Rect(11, 17, 268, 61), manager=self.manager,
+                                                   container=self.option_ui_windows[State.PF]),
+            'virtual_textbox': pygame_gui.elements.UITextBox(f'Virtual Potential Field: {self.pf_options["virtual"]}',
+                                                                   pygame.Rect(11, 110, 268, 40), manager=self.manager,
+                                                                   container=self.option_ui_windows[State.PF]),
+            'virtual_button': pygame_gui.elements.UIButton(pygame.Rect(10, 150, 270, 40), "Enable/Disable Virtual Field",
+                                         manager=self.manager, container=self.option_ui_windows[State.PF])
+        }
+
         self.change_state(self.default_planner)
         self._running = True
 
@@ -297,7 +314,7 @@ class App:
                                self.rrt_options['bias'])
         elif self.state == State.PF:
             self.obstacles = []
-            self.planner = PotentialField(self.map_size, self.start_pose, self.start_radius, self.goal_pose, self.goal_radius, self.obstacles, self.map)
+            self.planner = PotentialField(self.map_size, self.start_pose, self.start_radius, self.goal_pose, self.goal_radius, self.obstacles, self.map, self.pf_options['virtual'])
             self.t = threading.Thread(target=self.planner.start)
             self.t.start()
 
@@ -402,7 +419,6 @@ class App:
                         text=f'Connect to {self.prm_options["neighbours"]} neighbours', 
                         manager=self.manager,
                         container=self.option_ui_windows[State.PRM])
-
             if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
                 if event.ui_element == self.toolbar_buttons['add_obs']:
                     self.flags['set_obs'] = True
@@ -415,6 +431,14 @@ class App:
                 if event.ui_element == self.prm_ui_options['set_k']:
                     self.planner.update_k(self.prm_options['neighbours'])
                     self.search.path = []
+                if event.ui_element == self.pf_ui_options['virtual_button']:
+                    self.pf_options['virtual'] = not self.pf_options['virtual']
+                    self.pf_ui_options['virtual_textbox'].kill()
+                    self.pf_ui_options['virtual_textbox'] = pygame_gui.elements.UITextBox(f'Virtual Potential Field: {self.pf_options["virtual"]}',
+                                                                   pygame.Rect(11, 110, 268, 40), manager=self.manager,
+                                                                   container=self.option_ui_windows[State.PF])
+                    self.planner.virtual = self.pf_options['virtual']
+                    self.planner.updated = True
 
     def on_loop(self):
         self.dt = self.clock.tick(60) / 1000
@@ -538,6 +562,7 @@ class App:
         elif self.state == State.PF:
             self.obstacles = generate_circle_obs(self.num_obstacles, self.map_pos, self.map_size, self.circle_obs_dim, self.goal_pose)
             self.planner.set_obstacles(self.obstacles)
+            self.planner.updated = True
 
     def add_obstacle(self, rect):
         self.obstacles.append(rect)
@@ -553,7 +578,7 @@ class App:
     def renderState(self):
         if self.state == State.PRM:
             for obj in self.obstacles:
-                pygame.draw.rect(self.map, Color.BLUE, obj)
+                pygame.draw.rect(self.map, Color.LIGHT_PURPLE, obj)
 
             for node in self.planner.nodes:
                 node.draw(self.map, self.node_radius, 1)
@@ -563,7 +588,7 @@ class App:
 
         if self.state == State.RRT:
             for obj in self.obstacles:
-                pygame.draw.rect(self.map, Color.BLUE, obj)
+                pygame.draw.rect(self.map, Color.LIGHT_PURPLE, obj)
 
             for node in self.planner.nodes:
                 node.draw(self.map, self.node_radius, 1)
@@ -573,11 +598,10 @@ class App:
 
         if self.state == State.PF:
             for obs in self.obstacles:
-                pygame.draw.circle(self.map, Color.RED, (obs.x,obs.y), obs.rad, width=0)
+                pygame.draw.circle(self.map, Color.LIGHT_PURPLE, (obs.x,obs.y), obs.rad, width=0)
             self.planner.draw(self.map)
             for node in self.planner.path:
                 pygame.draw.circle(self.map, Color.LIGHT_BLUE, node.get_coords(), self.node_radius, width=0)
-
 
     def simulateState(self):
         if self.state == State.PRM:
@@ -591,7 +615,12 @@ class App:
                 self.t = threading.Thread(target=self.planner.start, daemon=True)
                 self.t.start()
         if self.state ==  State.PF:
+            self.planner.updated = True
             if self.t is None or not self.t.is_alive():
+                self.t = threading.Thread(target=self.planner.start, daemon=True)
+                self.t.start()
+            else:
+                self.t.join()
                 self.t = threading.Thread(target=self.planner.start, daemon=True)
                 self.t.start()
 
@@ -607,10 +636,14 @@ class App:
                 self.t = threading.Thread(target=self.planner.start, daemon=True)
                 self.t.start()
         elif self.state == State.PF:
+            self.planner.updated = True
             if self.t is None or not self.t.is_alive():
                 self.t = threading.Thread(target=self.planner.start, daemon=True)
                 self.t.start()
-
+            else:
+                self.t.join()
+                self.t = threading.Thread(target=self.planner.start, daemon=True)
+                self.t.start()
     def resetObstacles(self):
         if self.state == State.PRM:
             self.planner.obstacles = []

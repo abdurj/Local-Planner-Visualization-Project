@@ -19,6 +19,7 @@ class Color:
     PURPLE = (199, 21, 133)
     BROWN = (210, 105, 30)
     LIGHT_BLUE = (176, 196, 250)
+    LIGHT_PURPLE = (102,102,255)
 
 
 def dist_to_node(n1, n2):
@@ -75,13 +76,13 @@ def drawArrow(surface, startCoord, endCoord, LINE_WIDTH=3):
     )
 
     pygame.draw.line(
-        surface, Color.BLUE, A, B, LINE_WIDTH
+        surface, Color.GREY, A, B, LINE_WIDTH
     )
     pygame.draw.line(
-        surface, Color.BLUE, B, C, LINE_WIDTH
+        surface, Color.GREY, B, C, LINE_WIDTH
     )
     pygame.draw.line(
-        surface, Color.BLUE, B, D, LINE_WIDTH
+        surface, Color.GREY, B, D, LINE_WIDTH
     )
 
 
@@ -511,7 +512,7 @@ class RRT:
 
 #  Implementation from https://github.com/jlehett/Pytential-Fields used
 class PotentialField:
-    def __init__(self, map_dim, start_pose, start_radius, goal_pose, goal_radius, obstacles, map_surf):
+    def __init__(self, map_dim, start_pose, start_radius, goal_pose, goal_radius, obstacles, map_surf, virtual):
 
         self.min_vel = 2
         self.max_vel = 40
@@ -532,13 +533,16 @@ class PotentialField:
         self.obstacle_field = dict((i, np.array(0)) for i in obstacles)
         self.path = []
 
-        self.fcf = 10
+        self.updated = False
+        self.virtual = virtual
+        self.fcf = 5
 
         self.map_surf = map_surf
 
     def start(self):
         self.goal_field = self.attract_goal(self.goal_radius)
         self.field = self.goal_field
+        self.updated = False
         for obs in self.obstacles:
             if not obs in self.obstacle_field.keys():
                 self.obstacle_field[obs] = self.repel_obstacle(obs)
@@ -682,15 +686,28 @@ class PotentialField:
         self.gn = None
         self.path = [self.sn]
         curr = self.sn
+        stuck = False
         while self.gn is None:
+            if self.updated:
+                self.updated = False
+                break
             curr_pose = curr.get_coords()
             vec = self.field[curr_pose[0], curr_pose[1]]
             new_pose = int(curr_pose[0]+vec[0]), int(curr_pose[1]+vec[1])
 
-            # Relative angle to goal
-            theta = math.atan2(new_pose[1]-curr_pose[1], new_pose[0]-curr_pose[0])
-            self.field[curr_pose[0], curr_pose[1]] += [self.fcf*math.cos(theta)*vec[0], self.fcf*math.sin(theta)*vec[1]]
-            self.clampField(15)
+            if new_pose == curr_pose:
+                stuck = True
+
+            if self.virtual:
+                # Relative angle to goal
+                if stuck:
+                    theta = math.atan2(new_pose[1]-curr_pose[1], new_pose[0]-curr_pose[0])
+                    self.field[curr_pose[0], curr_pose[1]] += [self.fcf*math.cos(theta)*vec[0], self.fcf*math.sin(theta)*vec[1]]
+                    self.clampField(25)
+                else:
+                    time.sleep(0.02)
+            else:
+                time.sleep(0.02)
 
             new_node = Node(*new_pose, len(self.path))
             new_node.parent = curr
