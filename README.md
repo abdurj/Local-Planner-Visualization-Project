@@ -20,6 +20,9 @@
   - [Potential Field](#potential-field)
     - [Virtual Fields](#virtual-fields)
   - [Grid Based Planner](#grid-based-planner)
+- [Current Issues](#current-issues)
+- [Contributing](#contributing)
+- [Roadmap](#roadmap)
 - [Authors](#authors)
 - [Acknowledgements](#acknowledgements)
 - [License](#license)
@@ -144,6 +147,22 @@ Grid based planners model the free C-Space as a grid. From there a graph search 
 search the graph for a path from the start and end pose.
 
 A grid based planner is planned for a future release.
+
+# Current Issues
+-  Updating starting configuration in PRM doesn't clear search visualization
+-  Virtual Field pushes path into obstacles in certain scenarios
+
+# Contributing
+
+Contributions are always welcome!
+
+See `contributing.md` for ways to get started.
+
+# Roadmap
+- Add Grid Based Local Planner
+- Add variable growth factor to RRT planner
+- Add new local planners: RRT* / D* / Voronoi Roadmap
+- Add dynamic trajectory generation visualization as shown in [this video](https://www.youtube.com/watch?v=Cj6tAQe7UCY)
 
 # Authors
 
