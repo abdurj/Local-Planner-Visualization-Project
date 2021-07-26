@@ -8,10 +8,10 @@
 
 <div align="center">
 
-![License](https://img.shields.io/github/license/abdurj/local-planner-visualization-project)
-![last commit](https://img.shields.io/github/last-commit/abdurj/local-planner-visualization-project)
-![version](https://img.shields.io/github/v/release/abdurj/local-planner-visualization-project)
-![stars](https://img.shields.io/github/stars/abdurj/local-planner-visualization-project)
+![](https://img.shields.io/github/license/abdurj/local-planner-visualization-project)
+![](https://img.shields.io/github/last-commit/abdurj/local-planner-visualization-project)
+![](https://img.shields.io/github/v/release/abdurj/local-planner-visualization-project)
+![](https://img.shields.io/github/stars/abdurj/local-planner-visualization-project)
 
 </div>
 # Table of Contents
