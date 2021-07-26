@@ -22,9 +22,6 @@
   - [Grid Based Planner](#grid-based-planner)
 - [Authors](#authors)
 - [Acknowledgements](#acknowledgements)
-  - [PRM](#prm)
-  - [RRT](#rrt)
-  - [Potential Fields](#potential-fields)
 - [License](#license)
 
 
@@ -133,7 +130,7 @@ The goal pose emits a strong attractive force, and the obstacles emit a repulsiv
 creating a artificial potential field that attracts the robot towards the goal. The goal pose emits a strong attractive field, 
 and each obstacle emits a repulsive field. By following the sum of all fields at each position, we can construct a path towards
 the goal pose.
-![Virtual Field](https://i.imgur.com/MvO76Wq.gif)
+![PF Demo](https://i.imgur.com/3HYFFsI.gif)
 
 ### Virtual Fields
 A problem with the potential field planner is that it is easy for the planner to get stuck in local
@@ -158,16 +155,15 @@ Styling / UI / Design
 
   
 # Acknowledgements
-## PRM
-
+**PRM**
 - Becker, A. (2020, November 23). PRM: Probabilistic Roadmap Method in 3D and with 7-DOF robot arm. [YouTube](https://www.youtube.com/watch?v=tlFVbHENPCI&feature=youtu.be)
 - Modern Robotics, Chapter 10.5: Sampling Methods for Motion Planning (Part 1 of 2). (2018, March 16). [YouTube](https://www.youtube.com/watch?v=rKe6HO8LDu0)
-
-## RRT
+  
+**RRT**
 - Algobotics: Python RRT Path Planning playlist. [Youtube](https://www.youtube.com/watch?v=TzfNzqjJ2VQ&list=PL9RPomGb9IpRlfQEGkWnTt8jIauPovpOH)
 - RRT, RRT* & Random Trees. (2018, November 21). [YouTube](https://www.youtube.com/watch?v=Ob3BIJkQJEw)
-
-## Potential Fields
+  
+**Potential Field**
 - Ding Fu-guang, Jiao Peng, Bian Xin-qian and Wang Hong-jian, "AUV local path planning based on virtual potential field," IEEE International Conference Mechatronics and Automation, 2005, 2005, pp. 1711-1716 Vol. 4, doi: 10.1109/ICMA.2005.1626816. [URL](https://ieeexplore.ieee.org/document/1626816)
 - Michael A. Goodrich, Potential Fields Tutorial [URL](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.115.3259&rep=rep1&type=pdf)
 - Safadi, H. (2007, April 18). Local Path Planning Using Virtual Potential Field. [URL](https://www.cs.mcgill.ca/~Ehsafad/robotics/)
