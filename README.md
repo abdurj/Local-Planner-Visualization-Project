@@ -14,6 +14,7 @@
 ![](https://img.shields.io/github/stars/abdurj/local-planner-visualization-project)
 
 </div>
+
 # Table of Contents
 - [Table of Contents](#table-of-contents)
 - [Local Planner Visualization Project (LPVP)](#local-planner-visualization-project-lpvp)
