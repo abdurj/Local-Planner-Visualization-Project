@@ -19,6 +19,7 @@ class Color:
     PURPLE = (199, 21, 133)
     BROWN = (210, 105, 30)
     LIGHT_BLUE = (176, 196, 250)
+    LIGHT_PURPLE = (102,102,255)
 
 
 def dist_to_node(n1, n2):

@@ -160,6 +160,7 @@ class App:
 
     def on_init(self):
         pygame.init()
+        pygame.display.set_caption("Local Planner Visualization Project")
         self._display_surf = pygame.display.set_mode(self.size, pygame.HWSURFACE | pygame.DOUBLEBUF)
         self.manager = pygame_gui.UIManager(self.size, 'theme.json')
         self.map = pygame.Surface.subsurface(self._display_surf, (self.map_pos, self.map_size))
@@ -250,7 +251,7 @@ class App:
                                                                     manager=self.manager, container=self.option_ui_windows[State.PRM]),
             'neighbour_slider': pygame_gui.elements.UIHorizontalSlider(relative_rect=pygame.Rect(20, 185, 250, 40),
                                                                        start_value=self.prm_options['neighbours'], 
-                                                                       value_range=(1, 10),
+                                                                       value_range=(1, 20),
                                                                        manager=self.manager,
                                                                        container=self.option_ui_windows[State.PRM]),
             'set_k': pygame_gui.elements.UIButton(relative_rect=pygame.Rect(20,235,250,40), text='Set Neighbours', manager=self.manager, container=self.option_ui_windows[State.PRM]),
@@ -577,7 +578,7 @@ class App:
     def renderState(self):
         if self.state == State.PRM:
             for obj in self.obstacles:
-                pygame.draw.rect(self.map, Color.BLUE, obj)
+                pygame.draw.rect(self.map, Color.LIGHT_PURPLE, obj)
 
             for node in self.planner.nodes:
                 node.draw(self.map, self.node_radius, 1)
@@ -587,7 +588,7 @@ class App:
 
         if self.state == State.RRT:
             for obj in self.obstacles:
-                pygame.draw.rect(self.map, Color.BLUE, obj)
+                pygame.draw.rect(self.map, Color.LIGHT_PURPLE, obj)
 
             for node in self.planner.nodes:
                 node.draw(self.map, self.node_radius, 1)
@@ -597,7 +598,7 @@ class App:
 
         if self.state == State.PF:
             for obs in self.obstacles:
-                pygame.draw.circle(self.map, Color.RED, (obs.x,obs.y), obs.rad, width=0)
+                pygame.draw.circle(self.map, Color.LIGHT_PURPLE, (obs.x,obs.y), obs.rad, width=0)
             self.planner.draw(self.map)
             for node in self.planner.path:
                 pygame.draw.circle(self.map, Color.LIGHT_BLUE, node.get_coords(), self.node_radius, width=0)
