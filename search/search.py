@@ -53,7 +53,8 @@ class InformedSearch(Search):
         if gn.parent is not None and sn == self.sn:
             self.construct_path(sn, gn)
             return
-
+        
+        self.path = []
         self.pq = Q.PriorityQueue()
         self.nodes = nodes
         self.visited = [False for i in range(len(self.nodes))]
@@ -78,7 +79,7 @@ class InformedSearch(Search):
             self.construct_path(sn, gn)
             return
         if sn != self.sn:
-            self.sn = sn
+            print('solve')
             self.solve(self.nodes, sn, gn)
             return
         self.sn = sn

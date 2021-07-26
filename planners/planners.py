@@ -510,7 +510,7 @@ class RRT:
         self.b = bias
 
 
-#  Implementation from https://github.com/jlehett/Pytential-Fields used
+#  Extended on implementation from https://github.com/jlehett/Pytential-Fields to include virtual field calculations and better fit the project's usecase  
 class PotentialField:
     def __init__(self, map_dim, start_pose, start_radius, goal_pose, goal_radius, obstacles, map_surf, virtual):
 

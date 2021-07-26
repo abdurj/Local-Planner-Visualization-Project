@@ -161,6 +161,8 @@ class App:
     def on_init(self):
         pygame.init()
         pygame.display.set_caption("Local Planner Visualization Project")
+        icon = pygame.image.load(r'images/lpvp.png')
+        pygame.display.set_icon(icon)
         self._display_surf = pygame.display.set_mode(self.size, pygame.HWSURFACE | pygame.DOUBLEBUF)
         self.manager = pygame_gui.UIManager(self.size, 'theme.json')
         self.map = pygame.Surface.subsurface(self._display_surf, (self.map_pos, self.map_size))
@@ -630,7 +632,6 @@ class App:
             self.t = threading.Thread(target=self.search.update_solution,
                                       args=(self.planner.get_start_node(), self.planner.get_end_node(),))
             self.t.start()
-            self.t.join()
         elif self.state == State.RRT:
             if self.t is None or not self.t.is_alive():
                 self.t = threading.Thread(target=self.planner.start, daemon=True)
