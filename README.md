@@ -15,7 +15,7 @@
   - [Probabilistic Roadmap (PRM)](#probabilistic-roadmap-prm)
     - [1. Sampling Stage](#1-sampling-stage)
     - [2. Creating the roadmap](#2-creating-the-roadmap)
-    - [3 Searching the Roadmap](#3-searching-the-roadmap)
+    - [3. Searching the Roadmap](#3-searching-the-roadmap)
   - [Rapidly-exploring Random Tree (RRT)](#rapidly-exploring-random-tree-rrt)
   - [Potential Field](#potential-field)
     - [Virtual Fields](#virtual-fields)
@@ -107,7 +107,7 @@ creating a straight line between the nodes. If this line is collision free; an e
 
 ![App Preview](https://i.imgur.com/8w35Gi3.gif)
 
-### 3 Searching the Roadmap
+### 3. Searching the Roadmap
 After connecting all nodes with its K-closest neighbours, a resulting graph network will have been created.
 This network can be searched with a graph search algorithm. The currently supported graph search algorithms are:
 - Dijkstra's Shortest Path
