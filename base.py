@@ -210,10 +210,11 @@ class App:
                 object_id='pf', container=self.option_ui_panel),
         }
 
-        self.option_title = pygame_gui.elements.UILabel(relative_rect=pygame.Rect(20, 20, 135, 40),
+        self.option_title = pygame_gui.elements.UILabel(relative_rect=pygame.Rect(20, 20, 146, 40),
                                                         text='General Options',
                                                         manager=self.manager, 
-                                                        container=self.option_ui_panel)
+                                                        container=self.option_ui_panel,
+                                                        object_id='header')
         self.obstacle_textbox = pygame_gui.elements.UILabel(relative_rect=pygame.Rect(20, 60, 180, 35),
                                                             text=f'Generate {self.num_obstacles} Obstacles', 
                                                             manager=self.manager,
@@ -224,10 +225,11 @@ class App:
                                                                       manager=self.manager,
                                                                       container=self.option_ui_panel)
         self.prm_ui_options = {
-            'title': pygame_gui.elements.UILabel(relative_rect=pygame.Rect(20, 20, 105, 40),
+            'title': pygame_gui.elements.UILabel(relative_rect=pygame.Rect(20, 20, 121, 40),
                                                  text='PRM Options',  
                                                  manager=self.manager,
-                                                 container=self.option_ui_windows[State.PRM]),
+                                                 container=self.option_ui_windows[State.PRM],
+                                                 object_id='header'),
             'sample_slider_textbox': pygame_gui.elements.UILabel(relative_rect=pygame.Rect(20, 60, 145, 35), 
                                                                  text=f'Sample Size: {self.prm_options["sample_size"]}',
                                                                  manager=self.manager,
@@ -259,7 +261,7 @@ class App:
                                                  text='RRT Options',
                                                  manager=self.manager,
                                                  container=self.option_ui_windows[State.RRT]),
-            'bias_slider_textbox': pygame_gui.elements.UILabel(relative_rect=pygame.Rect(20, 60, 80, 35),
+            'bias_slider_textbox': pygame_gui.elements.UILabel(relative_rect=pygame.Rect(20, 60, 90, 35),
                                                                text=f'Bias: {self.rrt_options["bias"]}', 
                                                                manager=self.manager,
                                                                container=self.option_ui_windows[State.RRT]),
@@ -378,8 +380,9 @@ class App:
                 if event.ui_element == self.rrt_ui_options['bias_slider']:
                     self.rrt_options['bias'] = round(event.value, 2)
                     self.rrt_ui_options['bias_slider_textbox'].kill()
-                    self.rrt_ui_options['bias_slider_textbox'] = pygame_gui.elements.UITextBox(
-                        f'Bias: {self.rrt_options["bias"]}', pygame.Rect(11, 110, 268, 40), manager=self.manager,
+                    self.rrt_ui_options['bias_slider_textbox'] = pygame_gui.elements.UILabel(relative_rect=pygame.Rect(20, 60, 90, 35),
+                        text=f'Bias: {self.rrt_options["bias"]}', 
+                        manager=self.manager,
                         container=self.option_ui_windows[State.RRT])
                     self.planner.set_bias(self.rrt_options['bias'])
 

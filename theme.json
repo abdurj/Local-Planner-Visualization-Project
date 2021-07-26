@@ -23,11 +23,6 @@
             "active_border": "#8080B0",
             "filled_bar":"#f4251b",
             "unfilled_bar":"#CCCCCC"
-        },
-
-        "font":
-        {
-            "size": 24
         }
     },
 
@@ -92,6 +87,13 @@
             "active_border": "#5862D9"
         },
 
+        "font":
+        {
+            "name": "Roboto",
+            "size": "16",
+            "regular_path": "Roboto/Roboto-Bold.ttf"
+        },
+
         "misc":
         {
             "shape": "rounded_rectangle",
@@ -123,7 +125,25 @@
         }
     },
 
-    "drop_down_menu.text_box":
+    "drop_down_menu.button":
+    {
+        "misc":
+        {
+            "shape": "rounded_rectangle",
+            "shape_corner_radius": "8"
+        }
+    },
+
+    "drop_down_menu.#drop_down_options_list":
+    {
+        "misc":
+        {
+            "shape": "rounded_rectangle",
+            "shape_corner_radius": "8"
+        }
+    },
+
+    "drop_down_menu.#drop_down_options_list.button":
     {
         "misc":
         {
@@ -140,6 +160,31 @@
             "normal_text": "#D6D8FD",
             "hovered_text": "#303136",
             "normal_border": "#363940"
+        },
+
+        "font":
+        {
+            "name": "Roboto",
+            "size": "16",
+            "regular_path": "Roboto/Roboto-Regular.ttf"
+        }
+    },
+
+    "header": 
+    {
+        "colours":
+        {
+            "dark_bg":"#363940",
+            "normal_text": "#FFFFFF",
+            "hovered_text": "#303136",
+            "normal_border": "#363940"
+        },
+
+        "font":
+        {
+            "name": "Roboto",
+            "size": "18",
+            "regular_path": "Roboto/Roboto-Regular.ttf"
         }
     },
 
@@ -175,11 +220,19 @@
         "colours":
         {
             "normal_bg": "#5862D9",
-            "hovered_bg":"#D6D8FD",
-            "active_bg": "#5E60A8",
+            "hovered_bg":"#5563f7",
+            "active_bg": "#5563f7",
             "normal_border": "#5862D9",
             "hovered_border": "#5862D9",
-            "active_border": "#5E60A8"
+            "active_border": "#5E60A8",
+            "normal_text": "#FFFFFF"
+        },
+
+        "font":
+        {
+            "name": "Roboto",
+            "size": "20",
+            "regular_path": "Roboto/Roboto-Bold.ttf"
         }
     }
 }
