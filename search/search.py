@@ -79,7 +79,6 @@ class InformedSearch(Search):
             self.construct_path(sn, gn)
             return
         if sn != self.sn:
-            print('solve')
             self.solve(self.nodes, sn, gn)
             return
         self.sn = sn
