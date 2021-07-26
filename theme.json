@@ -152,6 +152,15 @@
         }
     },
 
+    "drop_down_menu.#expand_button": 
+    {
+        "font":
+        {
+            "name": "Default",
+            "size": "12"
+        }
+    },
+
     "label": 
     {
         "colours":
