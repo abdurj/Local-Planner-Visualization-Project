@@ -196,6 +196,7 @@ Styling / UI / Design
 - Ding Fu-guang, Jiao Peng, Bian Xin-qian and Wang Hong-jian, "AUV local path planning based on virtual potential field," IEEE International Conference Mechatronics and Automation, 2005, 2005, pp. 1711-1716 Vol. 4, doi: 10.1109/ICMA.2005.1626816. [URL](https://ieeexplore.ieee.org/document/1626816)
 - Michael A. Goodrich, Potential Fields Tutorial [URL](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.115.3259&rep=rep1&type=pdf)
 - Safadi, H. (2007, April 18). Local Path Planning Using Virtual Potential Field. [URL](https://www.cs.mcgill.ca/~Ehsafad/robotics/)
+- Lehett, J, Pytential Fields [Github Repo](https://github.com/jlehett/Pytential-Fields)
 
 # License
 This project is licensed under the terms of the MIT license.
