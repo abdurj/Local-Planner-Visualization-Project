@@ -89,7 +89,8 @@ pipenv install
 ```
 3. Run the program
 ```bash
-pipenv python3 base.py
+pipenv shell
+python base.py
 ```
     
 # Local Planners
