@@ -83,12 +83,13 @@ git clone https://github.com/abdurj/Local-Planner-Visualization-Project.git
 ```
 2. Install Dependencies 
 ```bash
-  pip3 install pygame pygame_gui numpy
-  cd Local-Planner-Visualization-Project
+cd Local-Planner-Visualization-Project
+pip3 install pipenv
+pipenv install
 ```
 3. Run the program
 ```bash
-python3 base.py
+pipenv python3 base.py
 ```
     
 # Local Planners
