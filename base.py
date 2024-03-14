@@ -169,7 +169,7 @@ class App:
         self.toolbar_base = pygame_gui.core.UIContainer(
             pygame.Rect(self.toolbar_pos, (self.toolbarw, self.toolbarh + 200)), manager=self.manager,
             starting_height=0)
-        self.toolbar_ui = pygame_gui.elements.UIPanel(pygame.Rect((0, 0), self.toolbar_size), starting_layer_height=1,
+        self.toolbar_ui = pygame_gui.elements.UIPanel(pygame.Rect((0, 0), self.toolbar_size), starting_height=1,
                                                       container=self.toolbar_base, manager=self.manager,
                                                       object_id='toolbar')
         self.toolbar_buttons = {
@@ -205,7 +205,7 @@ class App:
 
         self.option_ui_panel = pygame_gui.elements.UIPanel(
             relative_rect=pygame.Rect(self.optionp_pos, self.optionp_size), manager=self.manager,
-            element_id='option_panel', starting_layer_height=0)
+            element_id='option_panel', starting_height=0)
 
         self.option_ui_windows = {
             State.RRT: pygame_gui.core.UIContainer(
